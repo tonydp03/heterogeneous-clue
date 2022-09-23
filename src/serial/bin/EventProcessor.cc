@@ -16,7 +16,7 @@ namespace edm {
       : source_(maxEvents, runForMinutes, registry_, inputFile, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
-      if (name == "CLUESerialClusterizerESProducer") {
+      if (name == "CLUESerialClusterizerESProducer") { // or CLUESerialTracksterizerESProducer
         auto esp = ESPluginFactory::create(name, configFile);
         esp->produce(eventSetup_);
       } else {

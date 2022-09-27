@@ -6,14 +6,30 @@
 struct ClusterCollection {
   ClusterCollection() = default;
 
-  void outResize(unsigned int const& nClusters) {
+  std::vector<float> x;
+  std::vector<float> y;
+  std::vector<float> z;
+  std::vector<float> eta;
+  std::vector<float> phi;
+  std::vector<float> r_over_absz;
+  std::vector<float> radius;
+  std::vector<int> layer;
+  std::vector<float> energy;
+  std::vector<int> isSilicon;
+
+};
+
+struct ClusterCollectionSerial {
+  ClusterCollectionSerial() = default;
+
+  void outResize() {
+    auto nClusters = x.size();
     rho.resize(nClusters);
     delta.resize(nClusters);
     nearestHigher.resize(nClusters);
     tracksterIndex.resize(nClusters);
     followers.resize(nClusters);
     isSeed.resize(nClusters);
-    n = nClusters;
   }
 
   std::vector<float> x;
@@ -25,7 +41,6 @@ struct ClusterCollection {
   std::vector<float> radius;
   std::vector<int> layer;
   std::vector<float> energy;
-  std::vector<int> nHits;  // don't know if it's necessary
   std::vector<int> isSilicon;
 
   std::vector<float> rho;
@@ -35,9 +50,8 @@ struct ClusterCollection {
   std::vector<int> isSeed;
   std::vector<int> tracksterIndex;
 
-  unsigned int n;
 };
 
-using ClusterCollectionOnLayers = std::vector<ClusterCollection>;
+using ClusterCollectionSerialOnLayers = std::vector<ClusterCollectionSerial>;
 
 #endif

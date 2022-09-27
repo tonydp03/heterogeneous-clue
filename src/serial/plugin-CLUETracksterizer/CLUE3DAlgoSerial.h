@@ -1,7 +1,6 @@
 #ifndef CLUE3DAlgo_Serial_h
 #define CLUE3DAlgo_Serial_h
 
-#include "DataFormats/PointsCloud.h"
 #include "DataFormats/ClusterCollection.h"
 #include "DataFormats/TICLLayerTile.h"
 
@@ -12,15 +11,14 @@ public:
   // set the right parameters in the constructor
   explicit CLUE3DAlgoSerial(float const &dc,
                             float const &rhoc,
-                            float const &outlierDeltaFactor,
-                            uint32_t const &numberOfPoints)
+                            float const &outlierDeltaFactor)
       : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {}
 
   ~CLUE3DAlgoSerial() = default;
 
-  void makeTracksters(PointsCloudSerial const &pc);
+  void makeTracksters(ClusterCollection const &host_pc);
 
-  ClusterCollectionOnLayers d_clusters;
+  ClusterCollectionSerialOnLayers d_clusters;
 
   TICLLayerTiles hist_;  // ?????? maybe same layer tiles but with different size and other functions?
 
@@ -30,7 +28,7 @@ private:
   float rhoc_;
   float outlierDeltaFactor_;
 
-  void setup(PointsCloudSerial const &pc);
+  void setup(ClusterCollection const &pc);
 };
 
 #endif

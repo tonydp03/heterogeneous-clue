@@ -8,7 +8,7 @@
 
 // all the functions here need to be changed
 
-void KernelComputeHistogram(TICLLayerTiles &d_hist, ClusterCollectionOnLayers &points) {
+void KernelComputeHistogram(TICLLayerTiles &d_hist, ClusterCollectionSerialOnLayers &points) {
 //  for (unsigned int i = 0; i < points.n; i++) {
 //    // push index of points into tiles
 //    d_hist.fill(points.layer[i], points.eta[i], points.phi[i], i);
@@ -16,7 +16,7 @@ void KernelComputeHistogram(TICLLayerTiles &d_hist, ClusterCollectionOnLayers &p
 };
 
 void KernelCalculateDensity(TICLLayerTiles &d_hist,
-    ClusterCollectionOnLayers &points,
+    ClusterCollectionSerialOnLayers &points,
     int algoVerbosity = 1,
     int densitySiblingLayers = 3,
     int densityXYDistanceSqr = 3.24,
@@ -150,13 +150,13 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
 }
 
 void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
-                                   ClusterCollectionOnLayers &points,
+                                   ClusterCollectionSerialOnLayers &points,
                                    float outlierDeltaFactor,
                                    float dc) {
   return;
 };
 
-void KernelFindAndAssignClusters(ClusterCollectionOnLayers &points, float outlierDeltaFactor, float dc, float rhoc) {
+void KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points, float outlierDeltaFactor, float dc, float rhoc) {
   return;
 };
 

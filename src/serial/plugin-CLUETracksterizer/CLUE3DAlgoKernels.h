@@ -265,8 +265,79 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
   }
 };
 
-void KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points, float outlierDeltaFactor, float dc, float rhoc) {
-  return;
+int KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points,
+    int algoVerbosity = 1,
+    float criticalXYDistance = 1.8, // cm
+    float criticalZDistanceLyr = 5,
+    float criticalDensity = 0.6, // GeV
+    float criticalSelfDensity = 0.15,
+    float outlierMultiplier = 2.) {
+  constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
+  unsigned int nTracksters = 0;
+
+  std::vector<std::pair<int, int>> localStack;
+  auto critical_transverse_distance = criticalXYDistance;
+  // find cluster seeds and outlier
+  for (unsigned int layer = 0; layer < nLayers; layer++) {
+    auto &clustersOnLayer = points[layer];
+    unsigned int numberOfClusters = clustersOnLayer.x.size();
+    for (unsigned int i = 0; i < numberOfClusters; i++) {
+      // initialize tracksterIndex
+      clustersOnLayer.tracksterIndex[i] = -1;
+      bool isSeed = (clustersOnLayer.delta[i].first > critical_transverse_distance ||
+                     clustersOnLayer.delta[i].second > criticalZDistanceLyr) &&
+                    (clustersOnLayer.rho[i] >= criticalDensity) &&
+                    (clustersOnLayer.energy[i] / clustersOnLayer.rho[i] > criticalSelfDensity);
+      if (!clustersOnLayer.isSilicon[i]) {
+        isSeed = (clustersOnLayer.delta[i].first > clustersOnLayer.radius[i] ||
+                  clustersOnLayer.delta[i].second > criticalZDistanceLyr) &&
+                 (clustersOnLayer.rho[i] >= criticalDensity) &&
+                 (clustersOnLayer.energy[i] / clustersOnLayer.rho[i] > criticalSelfDensity);
+      }
+      bool isOutlier = (clustersOnLayer.delta[i].first > outlierMultiplier * critical_transverse_distance) &&
+                       (clustersOnLayer.rho[i] < criticalDensity);
+      if (isSeed) {
+        if (algoVerbosity > 0) {
+          std::cout
+              << "Found seed on Layer " << layer << " SOAidx: " << i << " assigned ClusterIdx: " << nTracksters;
+        }
+        clustersOnLayer.tracksterIndex[i] = nTracksters++;
+        clustersOnLayer.isSeed[i] = true;
+        localStack.emplace_back(layer, i);
+      } else if (!isOutlier) {
+        auto [lyrIdx, soaIdx] = clustersOnLayer.nearestHigher[i];
+        if (algoVerbosity > 0) {
+          std::cout
+              << "Found follower on Layer " << layer << " SOAidx: " << i << " attached to cluster on layer: " << lyrIdx
+              << " SOAidx: " << soaIdx;
+        }
+        if (lyrIdx >= 0)
+          points[lyrIdx].followers[soaIdx].emplace_back(layer, i);
+      } else {
+        if (algoVerbosity > 0) {
+          std::cout
+              << "Found Outlier on Layer " << layer << " SOAidx: " << i << " with rho: " << clustersOnLayer.rho[i]
+              << " and delta: " << clustersOnLayer.delta[i].first << ", " << clustersOnLayer.delta[i].second;
+        }
+      }
+    }
+  }
+
+  // Propagate cluster index
+  while (!localStack.empty()) {
+    auto [lyrIdx, soaIdx] = localStack.back();
+    auto &thisSeed = points[lyrIdx].followers[soaIdx];
+    localStack.pop_back();
+
+    // loop over followers
+    for (auto [follower_lyrIdx, follower_soaIdx] : thisSeed) {
+      // pass id to a follower
+      points[follower_lyrIdx].tracksterIndex[follower_soaIdx] = points[lyrIdx].tracksterIndex[soaIdx];
+      // push this follower to localStack
+      localStack.emplace_back(follower_lyrIdx, follower_soaIdx);
+    }
+  }
+  return nTracksters;
 };
 
 #endif

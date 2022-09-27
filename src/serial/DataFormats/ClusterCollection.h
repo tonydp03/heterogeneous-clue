@@ -46,7 +46,7 @@ struct ClusterCollectionSerial {
   std::vector<float> rho;
   std::vector<std::pair<float, int>> delta;
   std::vector<std::pair<int, int>> nearestHigher;
-  std::vector<std::vector<int>> followers;
+  std::vector<std::vector<std::pair<int, int>>> followers;
   std::vector<int> isSeed;
   std::vector<int> tracksterIndex;
 

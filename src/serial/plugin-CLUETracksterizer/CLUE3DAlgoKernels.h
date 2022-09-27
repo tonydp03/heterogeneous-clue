@@ -151,9 +151,118 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
 
 void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
                                    ClusterCollectionSerialOnLayers &points,
-                                   float outlierDeltaFactor,
-                                   float dc) {
-  return;
+                                   int algoVerbosity = 1,
+                                   int densitySiblingLayers = 3,
+                                   bool nearestHigherOnSameLayer = false) {
+  constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
+  constexpr int nPhiBin = TICLLayerTiles::constants_type_t::nPhiBins;
+  constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
+  for (int layerId = 0; layerId <= nLayers; layerId++) {
+    auto &clustersOnLayer = points[layerId];
+    unsigned int numberOfClusters = clustersOnLayer.x.size();
+
+    auto distanceSqr = [](float r0, float r1, float phi0, float phi1) -> float {
+      auto delta_phi = reco::deltaPhi(phi0, phi1);
+      return (r0 - r1) * (r0 - r1) + r1 * r1 * delta_phi * delta_phi;
+    };
+
+    for (unsigned int i = 0; i < numberOfClusters; i++) {
+      if (algoVerbosity > 0) {
+        std::cout
+          << "Starting searching nearestHigher on " << layerId << " with rho: " << clustersOnLayer.rho[i]
+          << " at eta, phi: " << d_hist[layerId].etaBin(clustersOnLayer.eta[i]) << ", "
+          << d_hist[layerId].phiBin(clustersOnLayer.phi[i]);
+      }
+      // We need to partition the two sides of the HGCAL detector
+      int lastLayerPerSide = nLayers / 2;
+      int minLayer = 0;
+      int maxLayer = 2 * lastLayerPerSide - 1;
+      if (layerId < lastLayerPerSide) {
+        minLayer = std::max(layerId - densitySiblingLayers, minLayer);
+        maxLayer = std::min(layerId + densitySiblingLayers, lastLayerPerSide - 1);
+      } else {
+        minLayer = std::max(layerId - densitySiblingLayers, lastLayerPerSide + 1);
+        maxLayer = std::min(layerId + densitySiblingLayers, maxLayer);
+      }
+      constexpr float maxDelta = std::numeric_limits<float>::max();
+      float i_delta = maxDelta;
+      std::pair<int, int> i_nearestHigher(-1, -1);
+      std::pair<float, int> nearest_distances(maxDelta, std::numeric_limits<int>::max());
+      for (int currentLayer = minLayer; currentLayer <= maxLayer; currentLayer++) {
+        if (!nearestHigherOnSameLayer && (layerId == currentLayer))
+          continue;
+        const auto &tileOnLayer = d_hist[currentLayer];
+        int etaWindow = 1;
+        int phiWindow = 1;
+        int etaBinMin = std::max(tileOnLayer.etaBin(clustersOnLayer.eta[i]) - etaWindow, 0);
+        int etaBinMax = std::min(tileOnLayer.etaBin(clustersOnLayer.eta[i]) + etaWindow, nEtaBin);
+        int phiBinMin = tileOnLayer.phiBin(clustersOnLayer.phi[i]) - phiWindow;
+        int phiBinMax = tileOnLayer.phiBin(clustersOnLayer.phi[i]) + phiWindow;
+        for (int ieta = etaBinMin; ieta <= etaBinMax; ++ieta) {
+          auto offset = ieta * nPhiBin;
+          for (int iphi_it = phiBinMin; iphi_it <= phiBinMax; ++iphi_it) {
+            int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
+            if (algoVerbosity > 0) {
+              std::cout
+                << "Searching nearestHigher on " << currentLayer << " eta, phi: " << ieta << ", " << iphi_it << " "
+                << iphi << " " << offset << " " << (offset + iphi);
+            }
+            for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
+              auto const &clustersOnOtherLayer = points[currentLayer];
+              auto dist = maxDelta;
+              auto dist_transverse = maxDelta;
+              int dist_layers = std::abs(currentLayer - layerId);
+              dist_transverse = distanceSqr(clustersOnLayer.r_over_absz[i] * clustersOnLayer.z[i],
+                  clustersOnOtherLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
+                  clustersOnLayer.phi[i],
+                  clustersOnOtherLayer.phi[otherClusterIdx]);
+              // Add Z-scale to the final distance
+              dist = dist_transverse;
+              // TODO(rovere): in case of equal local density, the ordering in
+              // the original CLUE3D implementaiton is bsaed on the index of
+              // the LayerCclusters in the LayerClusterCollection. In this
+              // case, the index is based on the ordering of the SOA indices.
+              bool foundHigher = (clustersOnOtherLayer.rho[otherClusterIdx] >
+                  clustersOnLayer.rho[i]) ||
+                (clustersOnOtherLayer.rho[otherClusterIdx] == clustersOnLayer.rho[i] &&
+                 otherClusterIdx > i);
+              if (algoVerbosity > 0) {
+                std::cout
+                  << "Searching nearestHigher on " << currentLayer
+                  << " with rho: " << clustersOnOtherLayer.rho[otherClusterIdx]
+                  << " on layerIdxInSOA: " << currentLayer << ", " << otherClusterIdx
+                  << " with distance: " << sqrt(dist) << " foundHigher: " << foundHigher;
+              }
+              if (foundHigher && dist <= i_delta) {
+                // update i_delta
+                i_delta = dist;
+                nearest_distances = std::make_pair(sqrt(dist_transverse), dist_layers);
+                // update i_nearestHigher
+                i_nearestHigher = std::make_pair(currentLayer, otherClusterIdx);
+              }
+            }  // End of loop on clusters
+          }    // End of loop on phi bins
+        }      // End of loop on eta bins
+      }        // End of loop on layers
+
+      bool foundNearestInFiducialVolume = (i_delta != maxDelta);
+      if (algoVerbosity > 0) {
+        std::cout
+          << "i_delta: " << i_delta << " passed: " << foundNearestInFiducialVolume << " " << i_nearestHigher.first
+          << " " << i_nearestHigher.second << " distances: " << nearest_distances.first << ", "
+          << nearest_distances.second;
+      }
+      if (foundNearestInFiducialVolume) {
+        clustersOnLayer.delta[i] = nearest_distances;
+        clustersOnLayer.nearestHigher[i] = i_nearestHigher;
+      } else {
+        // otherwise delta is guaranteed to be larger outlierDeltaFactor_*delta_c
+        // we can safely maximize delta to be maxDelta
+        clustersOnLayer.delta[i] = std::make_pair(maxDelta, std::numeric_limits<int>::max());
+        clustersOnLayer.nearestHigher[i] = {-1, -1};
+      }
+    }
+  }
 };
 
 void KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points, float outlierDeltaFactor, float dc, float rhoc) {

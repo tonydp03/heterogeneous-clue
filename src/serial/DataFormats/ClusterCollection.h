@@ -19,9 +19,14 @@ struct ClusterCollection {
   std::vector<float> x;
   std::vector<float> y;
   std::vector<float> z;
+  std::vector<float> eta;
+  std::vector<float> phi;
+  std::vector<float> r_over_absz;
+  std::vector<float> radius;
   std::vector<int> layer;
   std::vector<float> energy;
   std::vector<int> nHits;  // don't know if it's necessary
+  std::vector<int> isSilicon;
 
   std::vector<float> rho;
   std::vector<float> delta;
@@ -29,12 +34,10 @@ struct ClusterCollection {
   std::vector<std::vector<int>> followers;
   std::vector<int> isSeed;
   std::vector<int> tracksterIndex;
-  // why use int instead of bool?
-  // https://en.cppreference.com/w/cpp/container/vector_bool
-  // std::vector<bool> behaves similarly to std::vector, but in order to be space efficient, it:
-  // Does not necessarily store its elements as a contiguous array (so &v[0] + n != &v[n])
 
   unsigned int n;
 };
+
+using ClusterCollectionOnLayers = std::vector<ClusterCollection>;
 
 #endif

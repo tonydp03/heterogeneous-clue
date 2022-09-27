@@ -3,7 +3,7 @@
 
 #include "DataFormats/PointsCloud.h"
 #include "DataFormats/ClusterCollection.h"
-#include "DataFormats/LayerTilesSerial.h"
+#include "DataFormats/TICLLayerTile.h"
 
 class CLUE3DAlgoSerial {
 public:
@@ -20,10 +20,9 @@ public:
 
   void makeTracksters(PointsCloudSerial const &pc);
 
-  ClusterCollection d_clusters;
+  ClusterCollectionOnLayers d_clusters;
 
-  std::array<LayerTilesSerial, NLAYERS>
-      hist_;  // ?????? maybe same layer tiles but with different size and other functions?
+  TICLLayerTiles hist_;  // ?????? maybe same layer tiles but with different size and other functions?
 
 private:
   // parameters needed for 3D?

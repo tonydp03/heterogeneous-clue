@@ -30,7 +30,6 @@ namespace {
 
   ClusterCollection readRaw3D(std::ifstream &inputFile, uint32_t n_points) {
     ClusterCollection data;
-    data.n = n_points;
     Point raw;
     for (unsigned int ipoint = 0; ipoint < n_points; ++ipoint) {
       inputFile.read(reinterpret_cast<char *>(&raw), sizeof(Point));

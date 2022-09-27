@@ -6,7 +6,7 @@
 
 // all the functions here need to be changed
 
-inline float distance(ClusterCollection &points, int i, int j) {
+inline float distance(ClusterCollectionSerial &points, int i, int j) {
   // 2-d distance on the layer
   if (points.layer[i] == points.layer[j]) {
     const float dx = points.x[i] - points.x[j];
@@ -17,14 +17,14 @@ inline float distance(ClusterCollection &points, int i, int j) {
   }
 }
 
-void KernelComputeHistogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, ClusterCollection &points) {
+void KernelComputeHistogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, ClusterCollectionSerial &points) {
   for (unsigned int i = 0; i < points.n; i++) {
     // push index of points into tiles
     d_hist[points.layer[i]].fill(points.x[i], points.y[i], i);
   }
 };
 
-void KernelCalculateDensity(std::array<LayerTilesSerial, NLAYERS> &d_hist, ClusterCollection &points, float dc) {
+void KernelCalculateDensity(std::array<LayerTilesSerial, NLAYERS> &d_hist, ClusterCollectionSerial &points, float dc) {
   // loop over all points
   for (unsigned int i = 0; i < points.n; i++) {
     LayerTilesSerial &lt = d_hist[points.layer[i]];
@@ -57,7 +57,7 @@ void KernelCalculateDensity(std::array<LayerTilesSerial, NLAYERS> &d_hist, Clust
 };
 
 void KernelComputeDistanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_hist,
-                                   ClusterCollection &points,
+                                   ClusterCollectionSerial &points,
                                    float outlierDeltaFactor,
                                    float dc) {
   // loop over all points
@@ -107,7 +107,7 @@ void KernelComputeDistanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_hist
   }  // end of loop over points
 };
 
-void KernelFindAndAssignClusters(ClusterCollection &points, float outlierDeltaFactor, float dc, float rhoc) {
+void KernelFindAndAssignClusters(ClusterCollectionSerial &points, float outlierDeltaFactor, float dc, float rhoc) {
   int nTracksters = 0;
 
   // find trackster seeds and outlier

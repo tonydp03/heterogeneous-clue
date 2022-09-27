@@ -19,10 +19,11 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout << name
-              << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
+              << "[--dim D] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
                  "PATH] [--configFile] [--validation] "
                  "[--empty]\n\n"
               << "Options\n"
+              << " --dim   Dimensioinality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
               << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
               << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
               << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -42,6 +43,7 @@ namespace {
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  int dim = 2;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -54,6 +56,9 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+    } else if (*i == "--dim") {
+      ++i;
+      dim = std::stoi(*i);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -85,6 +90,10 @@ int main(int argc, char** argv) {
       print_help(args.front());
       return EXIT_FAILURE;
     }
+  }
+  if (dim != 2 and dim != 3) {
+    std::cout << "The dimensionality of the algorithm is either 2 or 3!" << std::endl;
+    return EXIT_FAILURE;
   }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
@@ -125,7 +134,10 @@ int main(int argc, char** argv) {
   }
   iFile.close();
 
-  std::cout << "Running CLUE algorithm with the following parameters: \n";
+  if (dim == 2)
+    std::cout << "Running CLUE 2D algorithm with the following parameters: \n";
+  else
+    std::cout << "Running CLUE 3D algorithm with the following parameters: \n";
   std::cout << "dc = " << par.dc << '\n';
   std::cout << "rhoc = " << par.rhoc << '\n';
   std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
@@ -138,18 +150,32 @@ int main(int argc, char** argv) {
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
   if (not empty) {
-    edmodules = {"CLUESerialClusterizer"};
-    esmodules = {"CLUESerialClusterizerESProducer"};
-    if (par.produceOutput) {
-      esmodules.emplace_back("CLUEOutputESProducer");
-      edmodules.emplace_back("CLUEOutputProducer");
-    }
-    if (validation) {
-      esmodules.emplace_back("CLUEValidatorESProducer");
-      edmodules.emplace_back("CLUEValidator");
+    if (dim == 2) {
+      edmodules = {"CLUESerialClusterizer"};
+      esmodules = {"CLUESerialClusterizerESProducer"};
+      if (par.produceOutput) {
+        esmodules.emplace_back("CLUEOutputESProducer");
+        edmodules.emplace_back("CLUEOutputProducer");
+      }
+      if (validation) {
+        esmodules.emplace_back("CLUEValidatorESProducer");
+        edmodules.emplace_back("CLUEValidator");
+      }
+    } else if (dim == 3) {
+      edmodules = {"CLUESerialTracksterizer"};
+      esmodules = {"CLUESerialTracksterizerESProducer"};
+      if (par.produceOutput) {
+        // esmodules.emplace_back("CLUEOutputESProducer");
+        // edmodules.emplace_back("CLUEOutputProducer");
+      }
+      if (validation) {
+        // esmodules.emplace_back("CLUEValidatorESProducer");
+        // edmodules.emplace_back("CLUEValidator");
+      }
     }
   }
-  edm::EventProcessor processor(maxEvents,
+  edm::EventProcessor processor(dim,
+                                maxEvents,
                                 runForMinutes,
                                 numberOfStreams,
                                 std::move(edmodules),

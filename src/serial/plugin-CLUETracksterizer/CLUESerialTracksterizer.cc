@@ -5,7 +5,7 @@
 
 #include "DataFormats/PointsCloud.h"
 #include "DataFormats/ClusterCollection.h"
-#include "DataFormats/CLUE_config.h" 
+#include "DataFormats/CLUE_config.h"
 #include "CLUE3DAlgoSerial.h"
 
 class CLUESerialTracksterizer : public edm::EDProducer {
@@ -16,20 +16,21 @@ public:
 private:
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  edm::EDGetTokenT<PointsCloudSerial> pointsCloudToken_;
-  edm::EDPutTokenT<ClusterCollection> clusterCollectionToken_; 
+  edm::EDGetTokenT<ClusterCollection> clusterCollectionToken_;
+  edm::EDPutTokenT<ClusterCollectionSerial> tracksterToken_;
 };
 
 CLUESerialTracksterizer::CLUESerialTracksterizer(edm::ProductRegistry& reg)
-    : pointsCloudToken_{reg.consumes<PointsCloudSerial>()}, clusterCollectionToken_{reg.produces<ClusterCollection>()} {} 
+    : clusterCollectionToken_{reg.consumes<ClusterCollection>()},
+      tracksterToken_{reg.produces<ClusterCollectionSerial>()} {}
 
 void CLUESerialTracksterizer::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
-  auto const& pc = event.get(pointsCloudToken_);
-  Parameters const& par = eventSetup.get<Parameters>(); // new set of parameter? 
-  CLUE3DAlgoSerial clue3DAlgo(par.dc, par.rhoc, par.outlierDeltaFactor, pc.n); // not sure we need the number of points
+  auto const& pc = event.get(clusterCollectionToken_);
+  Parameters const& par = eventSetup.get<Parameters>();                         // new set of parameter?
+  CLUE3DAlgoSerial clue3DAlgo(par.dc, par.rhoc, par.outlierDeltaFactor, pc.n);  // not sure we need the number of points
   clue3DAlgo.makeTracksters(pc);
 
-  event.emplace(clusterCollectionToken_, std::move(clue3DAlgo.d_clusters));
+  event.emplace(tracksterToken_, std::move(clue3DAlgo.d_clusters));
 }
 
 DEFINE_FWK_MODULE(CLUESerialTracksterizer);

@@ -1,7 +1,6 @@
 #ifndef CLUE3DAlgo_Serial_h
 #define CLUE3DAlgo_Serial_h
 
-#include "DataFormats/PointsCloud.h"
 #include "DataFormats/ClusterCollection.h"
 #include "DataFormats/LayerTilesSerial.h"
 
@@ -18,9 +17,9 @@ public:
 
   ~CLUE3DAlgoSerial() = default;
 
-  void makeTracksters(PointsCloudSerial const &pc);
+  void makeTracksters(ClusterCollection const &host_pc);
 
-  ClusterCollection d_clusters;
+  ClusterCollectionSerial d_clusters;
 
   std::array<LayerTilesSerial, NLAYERS>
       hist_;  // ?????? maybe same layer tiles but with different size and other functions?
@@ -31,7 +30,7 @@ private:
   float rhoc_;
   float outlierDeltaFactor_;
 
-  void setup(PointsCloudSerial const &pc);
+  void setup(ClusterCollection const &pc);
 };
 
 #endif

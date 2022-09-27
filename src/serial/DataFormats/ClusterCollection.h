@@ -6,6 +6,17 @@
 struct ClusterCollection {
   ClusterCollection() = default;
 
+  std::vector<float> x;
+  std::vector<float> y;
+  std::vector<int> layer;
+  std::vector<float> energy;
+
+  unsigned int n;
+};
+
+struct ClusterCollectionSerial {
+  ClusterCollectionSerial() = default;
+
   void outResize(unsigned int const& nClusters) {
     rho.resize(nClusters);
     delta.resize(nClusters);
@@ -18,10 +29,10 @@ struct ClusterCollection {
 
   std::vector<float> x;
   std::vector<float> y;
-  std::vector<float> z;
+  // std::vector<float> z;
   std::vector<int> layer;
   std::vector<float> energy;
-  std::vector<int> nHits;  // don't know if it's necessary
+  // std::vector<int> nHits;  // don't know if it's necessary
 
   std::vector<float> rho;
   std::vector<float> delta;

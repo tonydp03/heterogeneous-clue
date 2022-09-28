@@ -12,6 +12,19 @@ struct Point {
   float weight;
 };
 
+struct PointClus {
+  float x;
+  float y;
+  float z;
+  float eta;
+  float phi;
+  float r_over_absz;
+  float radius;
+  float layer;
+  float energy;
+  float isSilicon;
+};
+
 namespace {
 
   PointsCloud readRaw2D(std::ifstream &inputFile, uint32_t n_points) {
@@ -30,15 +43,21 @@ namespace {
 
   ClusterCollection readRaw3D(std::ifstream &inputFile, uint32_t n_points) {
     ClusterCollection data;
-    data.n = n_points;
-    Point raw;
+    PointClus raw;
     for (unsigned int ipoint = 0; ipoint < n_points; ++ipoint) {
-      inputFile.read(reinterpret_cast<char *>(&raw), sizeof(Point));
+      inputFile.read(reinterpret_cast<char *>(&raw), sizeof(PointClus));
       data.x.emplace_back(raw.x);
       data.y.emplace_back(raw.y);
+      data.z.emplace_back(raw.z);
+      data.eta.emplace_back(raw.eta);
+      data.phi.emplace_back(raw.phi);
+      data.r_over_absz.emplace_back(raw.r_over_absz);
+      data.radius.emplace_back(raw.radius);
       data.layer.emplace_back(raw.layer);
-      data.energy.emplace_back(raw.weight);
+      data.energy.emplace_back(raw.energy);
+      data.isSilicon.emplace_back(raw.isSilicon);
     }
+
     return data;
   }
 
@@ -109,14 +128,7 @@ namespace edm {
   Source3D::Source3D(
       int maxEvents, int runForMinutes, ProductRegistry &reg, std::filesystem::path const &inputFile, bool validation)
       : Source(maxEvents, runForMinutes, reg, inputFile, validation), clusterToken_(reg.produces<ClusterCollection>()) {
-    std::cout << "***** Entering 3D *****" << std::endl;
     std::string input(inputFile);
-    // if (input.find("toyDetector") != std::string::npos) {
-    //   cloud_.emplace_back(readToyDetectors(inputFile));
-    //   if (runForMinutes_ < 0 and maxEvents_ < 0) {
-    //     maxEvents_ = 10;
-    //   }
-    // } else {
     std::ifstream in_raw(inputFile, std::ios::binary);
     uint32_t n_points;
     in_raw.exceptions(std::ifstream::badbit);
@@ -186,6 +198,7 @@ namespace edm {
 
     return ev;
   }
+
   std::unique_ptr<Event> Source3D::produce(int streamId, ProductRegistry const &reg) {
     if (shouldStop_) {
       return nullptr;

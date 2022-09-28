@@ -20,10 +20,10 @@ struct PointClus {
   float phi;
   float r_over_absz;
   float radius;
-  int layer;
+  float layer;
   float energy;
-  int isSilicon;
-  };
+  float isSilicon;
+};
 
 namespace {
 
@@ -57,6 +57,7 @@ namespace {
       data.energy.emplace_back(raw.energy);
       data.isSilicon.emplace_back(raw.isSilicon);
     }
+
     return data;
   }
 
@@ -127,7 +128,6 @@ namespace edm {
   Source3D::Source3D(
       int maxEvents, int runForMinutes, ProductRegistry &reg, std::filesystem::path const &inputFile, bool validation)
       : Source(maxEvents, runForMinutes, reg, inputFile, validation), clusterToken_(reg.produces<ClusterCollection>()) {
-    std::cout << "***** Entering 3D *****" << std::endl;
     std::string input(inputFile);
     std::ifstream in_raw(inputFile, std::ios::binary);
     uint32_t n_points;

@@ -12,7 +12,9 @@ public:
   explicit CLUE3DAlgoSerial(float const &dc,
                             float const &rhoc,
                             float const &outlierDeltaFactor)
-      : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {}
+      : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
+      hist_ = new TICLLayerTiles;
+      }
 
   ~CLUE3DAlgoSerial() = default;
 

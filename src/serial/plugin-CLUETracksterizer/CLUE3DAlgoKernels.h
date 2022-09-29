@@ -8,11 +8,15 @@
 
 // all the functions here need to be changed
 
-void KernelComputeHistogram(TICLLayerTiles &d_hist, ClusterCollectionSerialOnLayers &points) {
-//  for (unsigned int i = 0; i < points.n; i++) {
-//    // push index of points into tiles
-//    d_hist.fill(points.layer[i], points.eta[i], points.phi[i], i);
-//  }
+void KernelComputeHistogram(TICLLayerTiles &d_hist,
+    ClusterCollectionSerialOnLayers &points) {
+  for (unsigned int layer = 0; layer < points.size(); layer++) {
+    for (unsigned int idxSoAOnLyr = 0; idxSoAOnLyr < points[layer].x.size(); ++idxSoAOnLyr) {
+      d_hist.fill(layer, std::abs(points[layer].eta[idxSoAOnLyr]),
+          points[layer].phi[idxSoAOnLyr],
+          idxSoAOnLyr);
+    }
+  }
 };
 
 void KernelCalculateDensity(TICLLayerTiles &d_hist,

@@ -38,4 +38,6 @@ void CLUE3DAlgoSerial::makeTracksters(ClusterCollection const &pc) {
   KernelCalculateDensity(*hist_, d_clusters);
   KernelComputeDistanceToHigher(*hist_, d_clusters);
   KernelFindAndAssignClusters(d_clusters);
+  // Reset Tile
+    hist_->clear();
 }

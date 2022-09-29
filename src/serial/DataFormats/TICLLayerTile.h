@@ -80,6 +80,11 @@ public:
   // properly use and consistently access it here.
   const auto& operator[](int index) const { return tiles_[index]; }
   void fill(int index, double eta, double phi, unsigned int objectId) { tiles_[index].fill(eta, phi, objectId); }
+  void clear() {
+    for (unsigned int index = 0; index < ticl::TileConstants::nLayers; ++index) {
+      tiles_[index].clear();
+    }
+  }
 
 private:
   T tiles_;

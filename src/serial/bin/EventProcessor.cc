@@ -20,7 +20,7 @@ namespace edm {
       source_ = new Source3D(maxEvents, runForMinutes, registry_, inputFile, validation);
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
-      if (name == "CLUESerialClusterizerESProducer" or "CLUESerialTracksterizerESProducer") {
+      if (name == "CLUESerialClusterizerESProducer" or name == "CLUESerialTracksterizerESProducer") {
         auto esp = ESPluginFactory::create(name, configFile);
         esp->produce(eventSetup_);
       } else {

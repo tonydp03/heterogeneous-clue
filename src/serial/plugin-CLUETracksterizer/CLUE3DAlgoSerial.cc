@@ -10,6 +10,7 @@ void CLUE3DAlgoSerial::setup(ClusterCollection const &pc) {
   // Maybe we'll need also vector of rechit indices for each cluster
 
   // copy input variables
+  d_clusters.resize(ticl::TileConstants::nLayers);
   for (unsigned int i = 0; i < pc.x.size(); ++i) {
     d_clusters[pc.layer[i]].x.push_back(pc.x[i]);
     d_clusters[pc.layer[i]].y.push_back(pc.y[i]);

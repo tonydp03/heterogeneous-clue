@@ -18,19 +18,20 @@ private:
 
   edm::EDGetTokenT<ClusterCollection> clusterCollectionToken_;
   edm::EDPutTokenT<ClusterCollectionSerialOnLayers> tracksterToken_;
+
+  CLUE3DAlgoSerial * algo_;
 };
 
 CLUESerialTracksterizer::CLUESerialTracksterizer(edm::ProductRegistry& reg)
     : clusterCollectionToken_{reg.consumes<ClusterCollection>()},
-      tracksterToken_{reg.produces<ClusterCollectionSerialOnLayers>()} {}
+      tracksterToken_{reg.produces<ClusterCollectionSerialOnLayers>()} {
+      algo_ = new CLUE3DAlgoSerial;}
 
 void CLUESerialTracksterizer::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
   auto const& pc = event.get(clusterCollectionToken_);
-  Parameters const& par = eventSetup.get<Parameters>();                         // new set of parameter?
-  CLUE3DAlgoSerial clue3DAlgo(par.dc, par.rhoc, par.outlierDeltaFactor);
-  clue3DAlgo.makeTracksters(pc);
+  algo_->makeTracksters(pc);
 
-  event.emplace(tracksterToken_, std::move(clue3DAlgo.d_clusters));
+  event.emplace(tracksterToken_, std::move(algo_->d_clusters));
 }
 
 DEFINE_FWK_MODULE(CLUESerialTracksterizer);

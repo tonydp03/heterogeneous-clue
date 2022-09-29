@@ -7,16 +7,11 @@
 class CLUE3DAlgoSerial {
 public:
   // constructor
-  CLUE3DAlgoSerial() = delete;
-  // set the right parameters in the constructor
-  explicit CLUE3DAlgoSerial(float const &dc,
-                            float const &rhoc,
-                            float const &outlierDeltaFactor)
-      : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
+  CLUE3DAlgoSerial() {
       hist_ = new TICLLayerTiles;
-      }
+  }
 
-  ~CLUE3DAlgoSerial() = default;
+  ~CLUE3DAlgoSerial() {delete hist_;};
 
   void makeTracksters(ClusterCollection const &host_pc);
 
@@ -25,10 +20,6 @@ public:
   TICLLayerTiles *hist_;
 
 private:
-  // parameters needed for 3D?
-  float dc_;
-  float rhoc_;
-  float outlierDeltaFactor_;
 
   void setup(ClusterCollection const &pc);
 };

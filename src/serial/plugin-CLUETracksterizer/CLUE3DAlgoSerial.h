@@ -9,15 +9,18 @@ public:
   // constructor
   CLUE3DAlgoSerial() {
       hist_ = new TICLLayerTiles;
+      histSoA_ = new TICLLayerTiles;
   }
 
-  ~CLUE3DAlgoSerial() {delete hist_;};
+  ~CLUE3DAlgoSerial() {delete hist_; delete histSoA_;};
 
   void makeTracksters(ClusterCollection const &host_pc);
 
   ClusterCollectionSerialOnLayers d_clusters;
+  ClusterCollectionSerial d_clustersSoA;
 
   TICLLayerTiles *hist_;
+  TICLLayerTiles *histSoA_;
 
 private:
 

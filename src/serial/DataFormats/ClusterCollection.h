@@ -23,6 +23,12 @@ struct ClusterCollectionSerial {
   ClusterCollectionSerial() = default;
 
   void outResize() {
+    rho.clear();
+    delta.clear();
+    nearestHigher.clear();
+    tracksterIndex.clear();
+    followers.clear();
+    isSeed.clear();
     auto nClusters = x.size();
     rho.resize(nClusters);
     delta.resize(nClusters);

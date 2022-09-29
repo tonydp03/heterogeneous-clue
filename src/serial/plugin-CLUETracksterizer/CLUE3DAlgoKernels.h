@@ -33,7 +33,7 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TICLLayerTiles::constants_type_t::nPhiBins;
   constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
-  for (int layerId = 0; layerId <= nLayers; layerId++) {
+  for (int layerId = 0; layerId < nLayers; layerId++) {
     auto &clustersOnLayer = points[layerId];
     unsigned int numberOfClusters = clustersOnLayer.x.size();
 
@@ -161,7 +161,7 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TICLLayerTiles::constants_type_t::nPhiBins;
   constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
-  for (int layerId = 0; layerId <= nLayers; layerId++) {
+  for (int layerId = 0; layerId < nLayers; layerId++) {
     auto &clustersOnLayer = points[layerId];
     unsigned int numberOfClusters = clustersOnLayer.x.size();
 

@@ -35,7 +35,7 @@ void CLUE3DAlgoSerial::makeTracksters(ClusterCollection const &pc) {
 
   // calculate rho, delta and find seeds
   KernelComputeHistogram(*hist_, d_clusters);
-  KernelCalculateDensity(*hist_, d_clusters, dc_);
-  KernelComputeDistanceToHigher(*hist_, d_clusters, outlierDeltaFactor_, dc_);
-  KernelFindAndAssignClusters(d_clusters, outlierDeltaFactor_, dc_, rhoc_);
+  KernelCalculateDensity(*hist_, d_clusters);
+  KernelComputeDistanceToHigher(*hist_, d_clusters);
+  KernelFindAndAssignClusters(d_clusters);
 }

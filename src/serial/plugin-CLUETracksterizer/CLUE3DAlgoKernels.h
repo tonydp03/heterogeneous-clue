@@ -21,7 +21,7 @@ void KernelComputeHistogram(TICLLayerTiles &d_hist,
 
 void KernelCalculateDensity(TICLLayerTiles &d_hist,
     ClusterCollectionSerialOnLayers &points,
-    int algoVerbosity = 1,
+    int algoVerbosity = 0,
     int densitySiblingLayers = 3,
     int densityXYDistanceSqr = 3.24,
     float kernelDensityFactor = 0.2,
@@ -155,7 +155,7 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
 
 void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
                                    ClusterCollectionSerialOnLayers &points,
-                                   int algoVerbosity = 1,
+                                   int algoVerbosity = 0,
                                    int densitySiblingLayers = 3,
                                    bool nearestHigherOnSameLayer = false) {
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
@@ -270,7 +270,7 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
 };
 
 int KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points,
-    int algoVerbosity = 1,
+    int algoVerbosity = 0,
     float criticalXYDistance = 1.8, // cm
     float criticalZDistanceLyr = 5,
     float criticalDensity = 0.6, // GeV

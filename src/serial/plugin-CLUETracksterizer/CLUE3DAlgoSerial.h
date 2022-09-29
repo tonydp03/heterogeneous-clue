@@ -20,7 +20,7 @@ public:
 
   ClusterCollectionSerialOnLayers d_clusters;
 
-  TICLLayerTiles hist_;  // ?????? maybe same layer tiles but with different size and other functions?
+  TICLLayerTiles *hist_;
 
 private:
   // parameters needed for 3D?

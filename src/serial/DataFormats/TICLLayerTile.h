@@ -68,7 +68,6 @@ private:
 namespace ticl {
   using TICLLayerTile = TICLLayerTileT<TileConstants>;
   using Tiles = std::array<TICLLayerTile, TileConstants::nLayers>;
-  using TracksterTiles = std::array<TICLLayerTile, TileConstants::iterations>;
 }  // namespace ticl
 
 template <typename T>
@@ -87,6 +86,5 @@ private:
 };
 
 using TICLLayerTiles = TICLGenericTile<ticl::Tiles>;
-using TICLTracksterTiles = TICLGenericTile<ticl::TracksterTiles>;
 
 #endif

@@ -12,7 +12,6 @@ namespace ticl {
     static constexpr int nEtaBins = 34;
     static constexpr int nPhiBins = 126;
     static constexpr int nLayers = 94;
-    static constexpr int iterations = 4;
     static constexpr int nBins = nEtaBins * nPhiBins;
   };
 }  // namespace ticl

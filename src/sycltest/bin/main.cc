@@ -40,7 +40,6 @@ namespace {
 
 int main(int argc, char** argv) try {
   // Parse command line arguments
-  setenv("SYCL_DEVICE_FILTER", "cpu,gpu", true);
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
   int numberOfStreams = 0;

@@ -5,6 +5,8 @@
 
 #include <CL/sycl.hpp>
 
+#include "SYCLCore/unique_ptr.h"
+
 #include "SYCLDataFormats/PointsCloudSYCL.h"
 #include "SYCLDataFormats/LayerTilesSYCL.h"
 
@@ -16,7 +18,7 @@ public:
                sycl::queue const &stream,
                int const &numberOfPoints);
 
-  ~CLUEAlgoSYCL();
+  ~CLUEAlgoSYCL() = default;
 
   void makeClusters(PointsCloud const &host_pc);
 
@@ -26,16 +28,11 @@ private:
   float dc_;
   float rhoc_;
   float outlierDeltaFactor_;
-
-  LayerTilesSYCL *d_hist;
-  cms::sycltools::VecArray<int, maxNSeeds> *d_seeds;
-  cms::sycltools::VecArray<int, maxNFollowers> *d_followers;
-
   std::optional<sycl::queue> queue_;
 
-  void init_device();
-
-  void free_device();
+  cms::sycltools::unique_ptr<LayerTilesSYCL[]> d_hist;
+  cms::sycltools::unique_ptr<cms::sycltools::VecArray<int, maxNSeeds>> d_seeds;
+  cms::sycltools::unique_ptr<cms::sycltools::VecArray<int, maxNFollowers>[]> d_followers;
 
   void setup(PointsCloud const &host_pc);
 };

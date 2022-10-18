@@ -198,8 +198,4 @@ void CLUEValidator::validateOutput(const PointsCloudSerial& pc, std::string true
   }
 }
 
-<<<<<<< HEAD
 DEFINE_FWK_MODULE(CLUEValidator);
-=======
-DEFINE_FWK_MODULE(CLUEValidator);
->>>>>>> f58da7fc57beaf6ad46f4fbf4012941117f255f4

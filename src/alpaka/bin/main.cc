@@ -49,7 +49,7 @@ namespace {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
               << " --hip               Use ROCm/HIP backend\n"
 #endif
-              << " --dim   Dimensioinality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
+              << " --dim   Dimensionality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
               << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
               << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
               << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -263,14 +263,14 @@ int main(int argc, char** argv) {
     }
     iFile.close();
 
-    std::cout << "Running CLUE algorithm with the following parameters: \n";
-    std::cout << "dc = " << par.dc << '\n';
-    std::cout << "rhoc = " << par.rhoc << '\n';
-    std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+    std::cerr << "Running CLUE algorithm with the following parameters: \n";
+    std::cerr << "dc = " << par.dc << '\n';
+    std::cerr << "rhoc = " << par.rhoc << '\n';
+    std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
 
     if (par.produceOutput) {
       transfer = true;
-      std::cout << "Producing output at the end" << std::endl;
+      std::cerr << "Producing output at the end" << std::endl;
     }
 
     if (not empty) {
@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
       }
     }
   } else {
-    std::cout << "Running CLUE 3D algorithm with default parameters\n";
+    std::cerr << "Running CLUE 3D algorithm with default parameters\n";
     if (not empty) {
       for (auto const& [backend, weight] : backends) {
         std::string prefix = "alpaka_" + name(backend) + "::";
@@ -301,7 +301,7 @@ int main(int argc, char** argv) {
         std::vector<std::string> edmodules;
         edmodules.emplace_back(prefix + "CLUEAlpakaTracksterizer");
         if (validation) {
-          std::cout << "Validation not available for CLUE 3D" << std::endl;
+          std::cerr << "Validation not available for CLUE 3D" << std::endl;
         }
         alternatives.emplace_back(backend, weight, std::move(edmodules));
       }

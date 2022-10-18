@@ -54,6 +54,7 @@ namespace cms {
 
       T data_;  //!
     };
+
   }  // namespace sycltools
 }  // namespace cms
 

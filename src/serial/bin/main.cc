@@ -140,12 +140,12 @@ int main(int argc, char** argv) {
       par.produceOutput = static_cast<bool>(std::stoi(value));
     }
     iFile.close();
-    std::cout << "Running CLUE 2D algorithm with the following parameters: \n";
-    std::cout << "dc = " << par.dc << '\n';
-    std::cout << "rhoc = " << par.rhoc << '\n';
-    std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+    std::cerr << "Running CLUE 2D algorithm with the following parameters: \n";
+    std::cerr << "dc = " << par.dc << '\n';
+    std::cerr << "rhoc = " << par.rhoc << '\n';
+    std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
     if (par.produceOutput) {
-      std::cout << "Producing output at the end" << std::endl;
+      std::cerr << "Producing output at the end" << std::endl;
     }
     if (not empty) {
       edmodules = {"CLUESerialClusterizer"};
@@ -160,11 +160,11 @@ int main(int argc, char** argv) {
       }
     }
   } else {
-    std::cout << "Running CLUE 3D algorithm with default parameters\n";
+    std::cerr << "Running CLUE 3D algorithm with default parameters\n";
     if (not empty) {
       edmodules = {"CLUESerialTracksterizer"};
       if (validation) {
-        std::cout << "Validation not available for CLUE 3D" << std::endl;
+        std::cerr << "Validation not available for CLUE 3D" << std::endl;
       }
     }
   }

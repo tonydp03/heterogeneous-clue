@@ -487,7 +487,7 @@ dataclean:
 	rm -fR $(DATA_BASE)/input
 	rm -fR $(DATA_BASE)/output
 	rm -fR $(DATA_BASE)/*.tar.gz
-	rm -fR $(DATA_BASE)/data_ok 
+	rm -fR $(DATA_BASE)/data_ok
 
 define CLEAN_template
 clean_$(1):

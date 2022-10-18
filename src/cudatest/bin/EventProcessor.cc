@@ -6,15 +6,16 @@
 
 namespace edm {
   EventProcessor::EventProcessor(int maxEvents,
+                                 int runForMinutes,
                                  int numberOfStreams,
                                  std::vector<std::string> const& path,
                                  std::vector<std::string> const& esproducers,
-                                 std::filesystem::path const& datadir,
+                                 std::filesystem::path const& inputFile,
                                  bool validation)
-      : source_(maxEvents, registry_, datadir, validation) {
+      : source_(maxEvents, runForMinutes, registry_, inputFile, validation) {
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
-      auto esp = ESPluginFactory::create(name, datadir);
+      auto esp = ESPluginFactory::create(name, inputFile);
       esp->produce(eventSetup_);
     }
 
@@ -25,6 +26,7 @@ namespace edm {
   }
 
   void EventProcessor::runToCompletion() {
+    source_.startProcessing();
     // The task that waits for all other work
     FinalWaitingTask globalWaitTask;
     tbb::task_group group;

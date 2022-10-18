@@ -12,7 +12,6 @@
 #include "DataFormats/PointsCloud.h"
 
 #include "AlpakaCore/Product.h"
-#include "AlpakaCore/PluginWrapper.h"
 #include "AlpakaCore/ScopedContext.h"
 
 #include "AlpakaDataFormats/alpaka/PointsCloudAlpaka.h"

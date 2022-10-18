@@ -4,13 +4,11 @@
 #include "AlpakaDataFormats/LayerTilesAlpaka.h"
 #include "AlpakaDataFormats/alpaka/PointsCloudAlpaka.h"
 
-// #include <assert.h>
-
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using pointsView = PointsCloudAlpaka::PointsCloudAlpakaView;
 
-  struct KernelComputeHistogram {
+  struct kernel_compute_histogram {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   LayerTilesAlpaka<Acc1D> *d_hist,
@@ -22,7 +20,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  struct KernelCalculateDensity {
+  struct kernel_calculate_density {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   LayerTilesAlpaka<Acc1D> *d_hist,
@@ -60,7 +58,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  struct KernelComputeDistanceToHigher {
+  struct kernel_calculate_distanceToHigher {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   LayerTilesAlpaka<Acc1D> *d_hist,
@@ -113,7 +111,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  struct KernelFindClusters {
+  struct kernel_find_clusters {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   cms::alpakatools::VecArray<int, maxNSeeds> *d_seeds,
@@ -147,7 +145,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  struct KernelAssignClusters {
+  struct kernel_assign_clusters {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   cms::alpakatools::VecArray<int, maxNSeeds> *d_seeds,

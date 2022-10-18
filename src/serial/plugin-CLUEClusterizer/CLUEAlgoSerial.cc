@@ -20,8 +20,8 @@ void CLUEAlgoSerial::makeClusters(PointsCloud const &host_pc) {
   setup(host_pc);
 
   // calculate rho, delta and find seeds
-  KernelComputeHistogram(hist_, d_points);
-  KernelCalculateDensity(hist_, d_points, dc_);
-  KernelComputeDistanceToHigher(hist_, d_points, outlierDeltaFactor_, dc_);
-  KernelFindAndAssignClusters(d_points, outlierDeltaFactor_, dc_, rhoc_);
+  kernel_compute_histogram(hist_, d_points);
+  kernel_calculate_density(hist_, d_points, dc_);
+  kernel_calculate_distanceToHigher(hist_, d_points, outlierDeltaFactor_, dc_);
+  kernel_findAndAssign_clusters(d_points, outlierDeltaFactor_, dc_, rhoc_);
 }

@@ -46,17 +46,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
     alpaka::enqueue(
         queue_,
-        alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelComputeHistogram(), hist_, d_points.view(), d_points.n));
-    alpaka::enqueue(
-        queue_,
-        alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelCalculateDensity(), hist_, d_points.view(), dc_, d_points.n));
-    alpaka::enqueue(
-        queue_,
-        alpaka::createTaskKernel<Acc1D>(
-            WorkDiv1D, KernelComputeDistanceToHigher(), hist_, d_points.view(), outlierDeltaFactor_, dc_, d_points.n));
+        alpaka::createTaskKernel<Acc1D>(WorkDiv1D, kernel_compute_histogram(), hist_, d_points.view(), d_points.n));
+    alpaka::enqueue(queue_,
+                    alpaka::createTaskKernel<Acc1D>(
+                        WorkDiv1D, kernel_calculate_density(), hist_, d_points.view(), dc_, d_points.n));
     alpaka::enqueue(queue_,
                     alpaka::createTaskKernel<Acc1D>(WorkDiv1D,
-                                                    KernelFindClusters(),
+                                                    kernel_calculate_distanceToHigher(),
+                                                    hist_,
+                                                    d_points.view(),
+                                                    outlierDeltaFactor_,
+                                                    dc_,
+                                                    d_points.n));
+    alpaka::enqueue(queue_,
+                    alpaka::createTaskKernel<Acc1D>(WorkDiv1D,
+                                                    kernel_find_clusters(),
                                                     seeds_,
                                                     followers_,
                                                     d_points.view(),
@@ -64,9 +68,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     dc_,
                                                     rhoc_,
                                                     d_points.n));
-    alpaka::enqueue(
-        queue_,
-        alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelAssignClusters(), seeds_, followers_, d_points.view()));
+
+    const Idx gridSize_nseeds = ceil(maxNSeeds / static_cast<float>(blockSize));
+    auto WorkDiv1D_seeds = cms::alpakatools::make_workdiv<Acc1D>(gridSize_nseeds, blockSize);
+    alpaka::enqueue(queue_,
+                    alpaka::createTaskKernel<Acc1D>(
+                        WorkDiv1D_seeds, kernel_assign_clusters(), seeds_, followers_, d_points.view()));
 
     alpaka::wait(queue_);
   }

@@ -15,14 +15,14 @@ inline float distance(PointsCloudSerial &points, int i, int j) {
   }
 }
 
-void kernel_compute_histogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points) {
+void KernelComputeHistogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points) {
   for (unsigned int i = 0; i < points.n; i++) {
     // push index of points into tiles
     d_hist[points.layer[i]].fill(points.x[i], points.y[i], i);
   }
 };
 
-void kernel_calculate_density(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points, float dc) {
+void KernelCalculateDensity(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points, float dc) {
   // loop over all points
   for (unsigned int i = 0; i < points.n; i++) {
     LayerTilesSerial &lt = d_hist[points.layer[i]];
@@ -54,7 +54,7 @@ void kernel_calculate_density(std::array<LayerTilesSerial, NLAYERS> &d_hist, Poi
   }    // end of loop over points
 };
 
-void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_hist,
+void KernelComputeDistanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_hist,
                                        PointsCloudSerial &points,
                                        float outlierDeltaFactor,
                                        float dc) {
@@ -105,7 +105,7 @@ void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_
   }  // end of loop over points
 };
 
-void kernel_findAndAssign_clusters(PointsCloudSerial &points, float outlierDeltaFactor, float dc, float rhoc) {
+void KernelFindAndAssignClusters(PointsCloudSerial &points, float outlierDeltaFactor, float dc, float rhoc) {
   int nClusters = 0;
 
   // find cluster seeds and outlier

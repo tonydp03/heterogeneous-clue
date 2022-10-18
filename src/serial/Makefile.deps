@@ -1,4 +1,5 @@
 serial_EXTERNAL_DEPENDS := TBB EIGEN BOOST BACKTRACE
 CLUEClusterizer_DEPENDS := Framework DataFormats
+CLUETracksterizer_DEPENDS := Framework DataFormats
 CLUEOutputProducer_DEPENDS := Framework DataFormats
 CLUEValidator_DEPENDS := Framework DataFormats

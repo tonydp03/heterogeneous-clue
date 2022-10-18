@@ -31,7 +31,7 @@ namespace {
               << " --runForMinutes     Continue processing the set of 100 events until this many minutes have passed "
                  "(default -1 for disabled; conflicts with --maxEvents)\n"
               << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "'data/input/raw.bin')\n"
+                 "'data/input/raw2D.bin')\n"
               << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
                  "produceOutput) to run CLUE (default 'config/hgcal_config.csv'\n"
               << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -108,7 +108,7 @@ int main(int argc, char** argv) try {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw.bin";
+    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D2D.bin";
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;

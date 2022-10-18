@@ -14,7 +14,8 @@
 namespace edm {
   class EventProcessor {
   public:
-    explicit EventProcessor(int maxEvents,
+    explicit EventProcessor(int dims,
+                            int maxEvents,
                             int runForMinutes,
                             int numberOfStreams,
                             std::vector<std::string> const& path,
@@ -23,8 +24,8 @@ namespace edm {
                             std::filesystem::path const& configFile,
                             bool validation);
 
-    int maxEvents() const { return source_.maxEvents(); }
-    int processedEvents() const { return source_.processedEvents(); }
+    int maxEvents() const { return source_->maxEvents(); }
+    int processedEvents() const { return source_->processedEvents(); }
 
     void runToCompletion();
 
@@ -33,7 +34,7 @@ namespace edm {
   private:
     edmplugin::PluginManager pluginManager_;
     ProductRegistry registry_;
-    Source source_;
+    Source* source_;
     EventSetup eventSetup_;
     std::vector<StreamSchedule> schedules_;
   };

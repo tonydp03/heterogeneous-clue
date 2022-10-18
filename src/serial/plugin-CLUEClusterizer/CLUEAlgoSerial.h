@@ -7,26 +7,16 @@
 class CLUEAlgoSerial {
 public:
   // constructor
-  CLUEAlgoSerial() = delete;
-  explicit CLUEAlgoSerial(float const &dc,
-                          float const &rhoc,
-                          float const &outlierDeltaFactor,
-                          uint32_t const &numberOfPoints)
-      : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {}
+  CLUEAlgoSerial() { hist_ = new std::array<LayerTilesSerial, NLAYERS>; };
+  ~CLUEAlgoSerial() { delete hist_; };
 
-  ~CLUEAlgoSerial() = default;
-
-  void makeClusters(PointsCloud const &host_pc);
+  void makeClusters(PointsCloud const &host_pc, float const &dc, float const &rhoc, float const &outlierDeltaFactor);
 
   PointsCloudSerial d_points;
 
-  std::array<LayerTilesSerial, NLAYERS> hist_;
+  std::array<LayerTilesSerial, NLAYERS> *hist_;
 
 private:
-  float dc_;
-  float rhoc_;
-  float outlierDeltaFactor_;
-
   void setup(PointsCloud const &host_pc);
 };
 

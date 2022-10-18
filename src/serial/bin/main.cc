@@ -19,21 +19,22 @@
 namespace {
   void print_help(std::string const& name) {
     std::cout << name
-              << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
+              << "[--dim D] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
                  "PATH] [--configFile] [--validation] "
                  "[--empty]\n\n"
               << "Options\n"
+              << " --dim   Dimensioinality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
               << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
               << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
               << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
               << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
                  "(default -1 for disabled; conflicts with --maxEvents)\n"
               << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "data/input/raw.bin)'\n"
+                 "data/input/raw2D.bin for CLUE 2D and data/input/raw3D.bin for CLUE 3D)'\n"
               << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
-                 "produceOutput) to run CLUE (default 'config/hgcal_config.csv' in the directory "
-                 "of the executable)\n"
-              << " --validation        Run (rudimentary) validation at the end\n"
+                 "produceOutput) to run CLUE 2D (default 'config/hgcal_config.csv' in the directory "
+                 "of the executable); not necessary for CLUE 3D\n"
+              << " --validation        Run (rudimentary) validation at the end (CLUE 2D only)\n"
               << " --empty             Ignore all producers (for testing only)\n"
               << std::endl;
   }
@@ -42,6 +43,7 @@ namespace {
 int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  int dim = 2;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -54,6 +56,9 @@ int main(int argc, char** argv) {
     if (*i == "-h" or *i == "--help") {
       print_help(args.front());
       return EXIT_SUCCESS;
+    } else if (*i == "--dim") {
+      ++i;
+      dim = std::stoi(*i);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -86,6 +91,10 @@ int main(int argc, char** argv) {
       return EXIT_FAILURE;
     }
   }
+  if (dim != 2 and dim != 3) {
+    std::cout << "The dimensionality of the algorithm is either 2 or 3!" << std::endl;
+    return EXIT_FAILURE;
+  }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
     return EXIT_FAILURE;
@@ -97,59 +106,71 @@ int main(int argc, char** argv) {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw.bin";
+    if (dim == 2)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
+    else if (dim == 3)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw3D.bin";
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (configFile.empty()) {
+  if ((configFile.empty()) and (dim == 2)) {
     configFile = std::filesystem::path(args[0]).parent_path() / "config" / "hgcal_config.csv";
   }
-  if (not std::filesystem::exists(configFile)) {
+  if ((not std::filesystem::exists(configFile)) and (dim == 2)) {
     std::cout << "Config file '" << configFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
-  }
-
-  Parameters par;
-  std::ifstream iFile(configFile);
-  std::string value = "";
-  while (getline(iFile, value, ',')) {
-    par.dc = std::stof(value);
-    getline(iFile, value, ',');
-    par.rhoc = std::stof(value);
-    getline(iFile, value, ',');
-    par.outlierDeltaFactor = std::stof(value);
-    getline(iFile, value);
-    par.produceOutput = static_cast<bool>(std::stoi(value));
-  }
-  iFile.close();
-
-  std::cout << "Running CLUE algorithm with the following parameters: \n";
-  std::cout << "dc = " << par.dc << '\n';
-  std::cout << "rhoc = " << par.rhoc << '\n';
-  std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
-
-  if (par.produceOutput) {
-    std::cout << "Producing output at the end" << std::endl;
   }
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not empty) {
-    edmodules = {"CLUESerialClusterizer"};
-    esmodules = {"CLUESerialClusterizerESProducer"};
-    if (par.produceOutput) {
-      esmodules.emplace_back("CLUEOutputESProducer");
-      edmodules.emplace_back("CLUEOutputProducer");
+  if (dim == 2) {
+    Parameters par;
+    std::ifstream iFile(configFile);
+    std::string value = "";
+    while (getline(iFile, value, ',')) {
+      par.dc = std::stof(value);
+      getline(iFile, value, ',');
+      par.rhoc = std::stof(value);
+      getline(iFile, value, ',');
+      par.outlierDeltaFactor = std::stof(value);
+      getline(iFile, value);
+      par.produceOutput = static_cast<bool>(std::stoi(value));
     }
-    if (validation) {
-      esmodules.emplace_back("CLUEValidatorESProducer");
-      edmodules.emplace_back("CLUEValidator");
+    iFile.close();
+    std::cout << "Running CLUE 2D algorithm with the following parameters: \n";
+    std::cout << "dc = " << par.dc << '\n';
+    std::cout << "rhoc = " << par.rhoc << '\n';
+    std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+    if (par.produceOutput) {
+      std::cout << "Producing output at the end" << std::endl;
+    }
+    if (not empty) {
+      edmodules = {"CLUESerialClusterizer"};
+      esmodules = {"CLUESerialClusterizerESProducer"};
+      if (par.produceOutput) {
+        esmodules.emplace_back("CLUEOutputESProducer");
+        edmodules.emplace_back("CLUEOutputProducer");
+      }
+      if (validation) {
+        esmodules.emplace_back("CLUEValidatorESProducer");
+        edmodules.emplace_back("CLUEValidator");
+      }
+    }
+  } else {
+    std::cout << "Running CLUE 3D algorithm with default parameters\n";
+    if (not empty) {
+      edmodules = {"CLUESerialTracksterizer"};
+      if (validation) {
+        std::cout << "Validation not available for CLUE 3D" << std::endl;
+      }
     }
   }
-  edm::EventProcessor processor(maxEvents,
+
+  edm::EventProcessor processor(dim,
+                                maxEvents,
                                 runForMinutes,
                                 numberOfStreams,
                                 std::move(edmodules),

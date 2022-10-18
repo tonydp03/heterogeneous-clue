@@ -42,27 +42,27 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& device_clusters = ctx.get(pcProduct);
     auto stream = ctx.stream();
 
-    results.outResize(device_clusters.n);
+    results.outResize();
     alpaka::memcpy(stream,
-                   cms::alpakatools::make_host_view(results.rho.data(), results.n),
+                   cms::alpakatools::make_host_view(results.rho.data(), results.x.size()),
                    device_clusters.rho,
-                   device_clusters.n);
+                   static_cast<uint32_t>(results.x.size()));
     alpaka::memcpy(stream,
-                   cms::alpakatools::make_host_view(results.delta.data(), results.n),
+                   cms::alpakatools::make_host_view(results.delta.data(), results.x.size()),
                    device_clusters.delta,
-                   device_clusters.n);
+                   static_cast<uint32_t>(results.x.size()));
     alpaka::memcpy(stream,
-                   cms::alpakatools::make_host_view(results.nearestHigher.data(), results.n),
+                   cms::alpakatools::make_host_view(results.nearestHigher.data(), results.x.size()),
                    device_clusters.nearestHigher,
-                   device_clusters.n);
+                   static_cast<uint32_t>(results.x.size()));
     alpaka::memcpy(stream,
-                   cms::alpakatools::make_host_view(results.isSeed.data(), results.n),
+                   cms::alpakatools::make_host_view(results.isSeed.data(), results.x.size()),
                    device_clusters.isSeed,
-                   device_clusters.n);
+                   static_cast<uint32_t>(results.x.size()));
     alpaka::memcpy(stream,
-                   cms::alpakatools::make_host_view(results.clusterIndex.data(), results.n),
+                   cms::alpakatools::make_host_view(results.clusterIndex.data(), results.x.size()),
                    device_clusters.clusterIndex,
-                   device_clusters.n);
+                   static_cast<uint32_t>(results.x.size()));
     alpaka::wait(stream);
 
     std::cout << "Data transferred back to host" << std::endl;
@@ -70,15 +70,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     Parameters par;
     par = eventSetup.get<Parameters>();
     if (par.produceOutput) {
-      auto temp_outDir = eventSetup.get<std::filesystem::path>();
-      std::string input_file_name = temp_outDir.filename();
-      std::string output_file_name = create_outputfileName(input_file_name, par.dc, par.rhoc, par.outlierDeltaFactor);
-      std::filesystem::path outDir = temp_outDir.parent_path() / output_file_name;
+      auto const& outDir = eventSetup.get<std::filesystem::path>();
+      std::string output_file_name = create_outputfileName(event.eventID(), par.dc, par.rhoc, par.outlierDeltaFactor);
+      std::filesystem::path outFile = outDir / output_file_name;
 
-      std::ofstream clueOut(outDir);
+      std::ofstream clueOut(outFile);
 
       clueOut << "index,x,y,layer,weight,rho,delta,nh,isSeed,clusterId\n";
-      for (unsigned int i = 0; i < device_clusters.n; i++) {
+      for (unsigned int i = 0; i < results.x.size(); i++) {
         clueOut << i << "," << results.x[i] << "," << results.y[i] << "," << results.layer[i] << ","
                 << results.weight[i] << "," << results.rho[i] << ","
                 << (results.delta[i] > 999 ? 999 : results.delta[i]) << "," << results.nearestHigher[i] << ","
@@ -87,7 +86,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       clueOut.close();
 
-      std::cout << "Ouput was saved in " << outDir << std::endl;
+      std::cout << "Ouput was saved in " << outFile << std::endl;
     }
 
     ctx.emplace(event, resultsToken_, std::move(results));

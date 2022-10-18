@@ -18,20 +18,21 @@ struct int4 {
 };
 #endif
 
-template <typename TAcc>
 class LayerTilesAlpaka {
 public:
-  // constructor
-  LayerTilesAlpaka(const TAcc& acc) { acc_ = acc; };
 
-  ALPAKA_FN_ACC void fill(const std::vector<float>& x, const std::vector<float>& y) {
+  template <typename TAcc>
+  ALPAKA_FN_ACC void fill(TAcc& acc, const std::vector<float>& x, const std::vector<float>& y) {
     auto cellsSize = x.size();
     for (unsigned int i = 0; i < cellsSize; ++i) {
-      layerTiles_[getGlobalBin(x[i], y[i])].push_back(acc_, i);
+      layerTiles_[getGlobalBin(x[i], y[i])].push_back(acc, i);
     }
   }
 
-  ALPAKA_FN_ACC void fill(float x, float y, int i) { layerTiles_[getGlobalBin(x, y)].push_back(acc_, i); }
+  template <typename TAcc>
+  ALPAKA_FN_ACC void fill(TAcc& acc, float x, float y, int i) {
+    layerTiles_[getGlobalBin(x, y)].push_back(acc, i);
+  }
 
   ALPAKA_FN_HOST_ACC int getXBin(float x) const {
     int xBin = (x - LayerTilesConstants::minX) * LayerTilesConstants::rX;
@@ -68,7 +69,6 @@ public:
 
 private:
   cms::alpakatools::VecArray<alpakaVect, LayerTilesConstants::nColumns * LayerTilesConstants::nRows> layerTiles_;
-  const TAcc& acc_;
 };
 
 #endif

@@ -19,35 +19,35 @@
 
 namespace {
   void print_help(std::string const& name) {
-    std::cout
-        << name << ": "
+    std::cout << name << ": "
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
-        << "[--serial] "
+              << "[--serial] "
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
-        << "[--tbb] "
+              << "[--tbb] "
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
-        << "[--cuda] "
+              << "[--cuda] "
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
-        << "[--hip] "
+              << "[--hip] "
 #endif
-        << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
-           "[--transfer]\n\n"
-        << "Options\n"
+              << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--data PATH] "
+                 "[--transfer]\n\n"
+              << "Options\n"
 #ifdef ALPAKA_ACC_CPU_B_SEQ_T_SEQ_PRESENT
-        << " --serial            Use CPU Serial backend\n"
+              << " --serial            Use CPU Serial backend\n"
 #endif
 #ifdef ALPAKA_ACC_CPU_B_TBB_T_SEQ_PRESENT
-        << " --tbb               Use CPU TBB backend\n"
+              << " --tbb               Use CPU TBB backend\n"
 #endif
 #ifdef ALPAKA_ACC_GPU_CUDA_PRESENT
-        << " --cuda              Use CUDA backend\n"
+              << " --cuda              Use CUDA backend\n"
 #endif
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
-        << " --hip               Use ROCm/HIP backend\n"
+              << " --hip               Use ROCm/HIP backend\n"
 #endif
+<<<<<<< HEAD
         << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
         << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
         << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
@@ -59,6 +59,19 @@ namespace {
         << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
         << " --empty             Ignore all producers (for testing only)\n"
         << std::endl;
+=======
+              << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
+              << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
+              << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
+              << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
+                 "(default -1 for disabled; conflicts with --maxEvents)\n"
+              << " --inputFile         Path to the input file (default 'data/input/raw2D.bin' in the directory of "
+                 "the executable)\n"
+              << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+              << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+              << " --empty             Ignore all producers (for testing only)\n"
+              << std::endl;
+>>>>>>> Completed CLUE3D porting to alpaka and optimized CLUE2D
   }
 }  // namespace
 

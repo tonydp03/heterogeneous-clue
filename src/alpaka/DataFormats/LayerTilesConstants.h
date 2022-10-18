@@ -6,7 +6,7 @@
 
 #define NLAYERS 100
 
-constexpr int maxNSeeds = 8192;
+constexpr int maxNSeeds = 100000;
 constexpr int maxNFollowers = 128;
 constexpr int localStackSizePerSeed = 128;
 

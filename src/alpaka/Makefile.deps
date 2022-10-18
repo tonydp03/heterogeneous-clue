@@ -6,5 +6,6 @@ ifdef ROCM_BASE
 alpaka_EXTERNAL_DEPENDS += ROCM
 endif
 CLUEClusterizer_DEPENDS := Framework DataFormats AlpakaCore AlpakaDataFormats
+CLUETracksterizer_DEPENDS := Framework DataFormats AlpakaCore AlpakaDataFormats
 CLUEOutputProducer_DEPENDS := Framework DataFormats AlpakaCore AlpakaDataFormats
 CLUEValidator_DEPENDS := Framework DataFormats AlpakaCore AlpakaDataFormats

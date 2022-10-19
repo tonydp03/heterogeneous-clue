@@ -39,7 +39,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::enqueue(
         queue_,
         alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetFollowers(), followers_, host_pc.x.size()));
-
+ 
     
     gridSize = std::ceil(LayerTilesConstants::nRows*LayerTilesConstants::nColumns / static_cast<float>(blockSize));
     WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);

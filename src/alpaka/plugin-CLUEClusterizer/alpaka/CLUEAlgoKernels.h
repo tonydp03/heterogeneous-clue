@@ -118,7 +118,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               float dist_ij_squared = (xi - xj) * (xi - xj) + (yi - yj) * (yi - yj);
               bool foundHigher = (d_points->rho[j] > rhoi);
               // in the rare case where rho is the same, use detid
-              // foundHigher = foundHigher || ((d_points->rho[j] == rhoi) && (j > i));
+              foundHigher = foundHigher || ((d_points->rho[j] == rhoi) && (j > i));
               if (foundHigher && dist_ij_squared <= dm_squared) {
                 // definitio of N'_{dm}(i)
                 // find the nearest point within N'_{dm}(i)
@@ -166,6 +166,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             // register as follower of its nearest higher
             d_followers[d_points->nearestHigher[i]].push_back(acc, i);
           }
+          d_points->isSeed[i] = 0;
         }
       });
     }

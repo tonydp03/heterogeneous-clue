@@ -9,23 +9,22 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  constexpr unsigned int reserve = 1000000;
 
   class PointsCloudAlpaka {
   public:
     PointsCloudAlpaka() = delete;
-    explicit PointsCloudAlpaka(Queue &stream)
+    explicit PointsCloudAlpaka(Queue stream, int nPoints)
         //input variables
-        : x{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          y{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          layer{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          weight{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
+        : x{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          y{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          layer{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          weight{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
           //result variables
-          rho{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          delta{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          nearestHigher{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          clusterIndex{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          isSeed{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
+          rho{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          delta{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          nearestHigher{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          clusterIndex{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          isSeed{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
           view_d{cms::alpakatools::make_device_buffer<PointsCloudAlpakaView>(stream)} {
       auto view_h = cms::alpakatools::make_host_buffer<PointsCloudAlpakaView>(stream);
       view_h->x = x.data();
@@ -39,7 +38,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       view_h->isSeed = isSeed.data();
 
       alpaka::memcpy(stream, view_d, view_h);
-      alpaka::wait(stream);
     }
     PointsCloudAlpaka(PointsCloudAlpaka const &) = delete;
     PointsCloudAlpaka(PointsCloudAlpaka &&) = default;

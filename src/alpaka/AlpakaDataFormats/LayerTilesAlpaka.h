@@ -37,14 +37,16 @@ public:
   ALPAKA_FN_HOST_ACC inline constexpr int getXBin(float x) const {
     int xBin = (x - LayerTilesConstants::minX) * LayerTilesConstants::rX;
     xBin = (xBin < LayerTilesConstants::nColumns ? xBin : LayerTilesConstants::nColumns - 1);
-    xBin = (xBin > 0 ? xBin : 0);
+    bool xBinPositive = xBin > 0;
+    xBin = xBinPositive*xBin;
     return xBin;
   }
 
   ALPAKA_FN_HOST_ACC inline constexpr int getYBin(float y) const {
     int yBin = (y - LayerTilesConstants::minY) * LayerTilesConstants::rY;
     yBin = (yBin < LayerTilesConstants::nRows ? yBin : LayerTilesConstants::nRows - 1);
-    yBin = (yBin > 0 ? yBin : 0);
+    bool yBinPositive = yBin > 0;
+    yBin = yBinPositive*yBin;
     return yBin;
   }
   ALPAKA_FN_HOST_ACC inline constexpr int getGlobalBin(float x, float y) const {

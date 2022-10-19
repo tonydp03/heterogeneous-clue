@@ -7,12 +7,11 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  void CLUEAlgoAlpaka::init_device() {
+  void CLUEAlgoAlpaka::init_device(int nPoints) {
     d_hist = cms::alpakatools::make_device_buffer<LayerTilesAlpaka[]>(queue_, NLAYERS);
     d_seeds = cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, maxNSeeds>>(queue_);
     d_followers =
-        cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, maxNFollowers>[]>(queue_, reserve);
-
+        cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, maxNFollowers>[]>(queue_, nPoints);
     hist_ = (*d_hist).data();
     seeds_ = (*d_seeds).data();
     followers_ = (*d_followers).data();
@@ -47,8 +46,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::enqueue(
         queue_,
         alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetHist(), hist_));
-
-    // alpaka::wait(queue_); 
   }
 
   void CLUEAlgoAlpaka::makeClusters(PointsCloud const &host_pc) {
@@ -88,7 +85,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::enqueue(
         queue_,
         alpaka::createTaskKernel<Acc1D>(WorkDiv1D_seeds, KernelAssignClusters(), seeds_, followers_, d_points.view()));
-
     alpaka::wait(queue_);
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

@@ -14,9 +14,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     // constructor
     CLUEAlgoAlpaka() = delete;
-    explicit CLUEAlgoAlpaka(float const &dc, float const &rhoc, float const &outlierDeltaFactor, Queue stream)
-        : d_points{stream}, queue_{std::move(stream)}, dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
-      init_device();
+    explicit CLUEAlgoAlpaka(int nPoints, float const &dc, float const &rhoc, float const &outlierDeltaFactor, Queue stream)
+        : d_points{stream, nPoints}, queue_{std::move(stream)}, dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
+      init_device(nPoints);
     }
 
     ~CLUEAlgoAlpaka() = default;
@@ -40,7 +40,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<cms::alpakatools::device_buffer<Device, cms::alpakatools::VecArray<int, maxNFollowers>[]>> d_followers;
 
     // private methods
-    void init_device();
+    void init_device(int nPoints);
 
     void setup(PointsCloud const &host_pc);
   };

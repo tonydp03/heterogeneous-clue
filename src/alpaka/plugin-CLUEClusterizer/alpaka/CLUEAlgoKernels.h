@@ -64,10 +64,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             //get the id of this bin
             int binId = d_hist[layeri].getGlobalBinByBin(xBin, yBin);
             //get the size of this bin
-            int binSize = d_hist[layeri][binId].size();
+            const auto& my_hist = d_hist[layeri][binId];
+            int binSize = my_hist.size();
             //iterate inside this bin
             for (int binIter = 0; binIter < binSize; binIter++) {
-              uint32_t j = d_hist[layeri][binId][binIter];
+              uint32_t j = my_hist[binIter];
               float xj = d_points->x[j];
               float yj = d_points->y[j];
               float dist_ij_squared = (xi - xj) * (xi - xj) + (yi - yj) * (yi - yj);

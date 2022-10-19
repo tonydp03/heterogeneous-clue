@@ -37,7 +37,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     CLUEAlgoAlpaka clueAlgo(pc.x.size(),par.dc, par.rhoc, par.outlierDeltaFactor, stream);
     clueAlgo.makeClusters(pc); 
 
-    // ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
+    ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

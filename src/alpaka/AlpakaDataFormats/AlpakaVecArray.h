@@ -8,7 +8,11 @@
 namespace cms::alpakatools {
 
   template <class T, int maxSize>
-  struct VecArray {
+  class VecArray {
+  public:
+    using self = VecArray<T, maxSize>;
+    using value_t = T;
+
     inline constexpr int push_back_unsafe(const T &element) {
       auto previousSize = m_size;
       m_size++;
@@ -42,33 +46,31 @@ namespace cms::alpakatools {
     }
 
     // thread-safe version of the vector, when used in a CUDA kernel
-    template <typename T_Acc>
-    ALPAKA_FN_ACC int push_back(const T_Acc &acc, const T &element) {
-      auto previousSize = atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
+    template <typename TAcc>
+    ALPAKA_FN_ACC int push_back(const TAcc &acc, const T &element) {
+      auto previousSize = alpaka::atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
       if (previousSize < maxSize) {
         m_data[previousSize] = element;
         return previousSize;
       } else {
-        atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
-        assert(("Too few elemets reserved"));
+        alpaka::atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         return -1;
       }
     }
 
-    template <typename T_Acc, class... Ts>
-    ALPAKA_FN_ACC int emplace_back(const T_Acc &acc, Ts &&...args) {
-      auto previousSize = atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
+    template <typename TAcc, class... Ts>
+    ALPAKA_FN_ACC int emplace_back(const TAcc &acc, Ts &&...args) {
+      auto previousSize = alpaka::atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
       if (previousSize < maxSize) {
         (new (&m_data[previousSize]) T(std::forward<Ts>(args)...));
         return previousSize;
       } else {
-        atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
+        alpaka::atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         return -1;
       }
     }
 
-    template <typename T_Acc, class... Ts>
-    ALPAKA_FN_ACC inline T pop_back() {
+    inline constexpr T pop_back() {
       if (m_size > 0) {
         auto previousSize = m_size--;
         return m_data[previousSize - 1];
@@ -84,17 +86,17 @@ namespace cms::alpakatools {
     inline constexpr T &operator[](int i) { return m_data[i]; }
     inline constexpr const T &operator[](int i) const { return m_data[i]; }
     inline constexpr void reset() { m_size = 0; }
-    inline constexpr int capacity() const { return maxSize; }
+    inline static constexpr int capacity() { return maxSize; }
     inline constexpr T const *data() const { return m_data; }
     inline constexpr void resize(int size) { m_size = size; }
     inline constexpr bool empty() const { return 0 == m_size; }
     inline constexpr bool full() const { return maxSize == m_size; }
 
-    int m_size = 0;
-
+  private:
     T m_data[maxSize];
-  };
 
-}  // end namespace cms::alpakatools
+    int m_size;
+  };
+}  // namespace cms::alpakatools
 
 #endif  // AlpakaVecArray_h

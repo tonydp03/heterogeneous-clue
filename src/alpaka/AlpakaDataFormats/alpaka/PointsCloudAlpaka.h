@@ -9,6 +9,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
+  constexpr unsigned int reserve = 1000000;
 
   class PointsCloudAlpaka {
   public:

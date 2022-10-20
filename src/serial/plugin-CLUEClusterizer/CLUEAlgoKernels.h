@@ -15,14 +15,14 @@ inline float distance(PointsCloudSerial &points, int i, int j) {
   }
 }
 
-void kernel_compute_histogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points) {
+void kernel_compute_histogram(LayerTilesSerial *d_hist, PointsCloudSerial &points) {
   for (unsigned int i = 0; i < points.n; i++) {
     // push index of points into tiles
     d_hist[points.layer[i]].fill(points.x[i], points.y[i], i);
   }
 };
 
-void kernel_calculate_density(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points, float dc) {
+void kernel_calculate_density(LayerTilesSerial *d_hist, PointsCloudSerial &points, float dc) {
   // loop over all points
   for (unsigned int i = 0; i < points.n; i++) {
     LayerTilesSerial &lt = d_hist[points.layer[i]];
@@ -54,7 +54,7 @@ void kernel_calculate_density(std::array<LayerTilesSerial, NLAYERS> &d_hist, Poi
   }    // end of loop over points
 };
 
-void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_hist,
+void kernel_calculate_distanceToHigher(LayerTilesSerial *d_hist,
                                        PointsCloudSerial &points,
                                        float outlierDeltaFactor,
                                        float dc) {
@@ -105,11 +105,16 @@ void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_
   }  // end of loop over points
 };
 
-void kernel_findAndAssign_clusters(PointsCloudSerial &points, float outlierDeltaFactor, float dc, float rhoc) {
+void kernel_findAndAssign_clusters(PointsCloudSerial &points,
+                                   cms::cuda::VecArray<int, 100000> *d_seeds,
+                                   cms::cuda::VecArray<int, 128> *d_followers,
+                                   float outlierDeltaFactor,
+                                   float dc,
+                                   float rhoc) {
   int nClusters = 0;
-
+  int localStackSizePerSeed = 128;
   // find cluster seeds and outlier
-  std::vector<int> localStack;
+  // std::vector<int> localStack;
   // loop over all points
   for (unsigned int i = 0; i < points.n; i++) {
     // initialize clusterIndex
@@ -129,27 +134,66 @@ void kernel_findAndAssign_clusters(PointsCloudSerial &points, float outlierDelta
       // increment number of clusters
       nClusters++;
       // add seed into local stack
-      localStack.push_back(i);
+      // localStack.push_back(i);
+      d_seeds->push_back(i);
     } else if (!isOutlier) {
       // register as follower at its nearest higher
-      points.followers[points.nearestHigher[i]].push_back(i);
+      // points.followers[points.nearestHigher[i]].push_back(i);
+      d_followers[points.nearestHigher[i]].push_back(i);
     }
   }
 
   // expend clusters from seeds
-  while (!localStack.empty()) {
-    int i = localStack.back();
-    auto &followers = points.followers[i];
-    localStack.pop_back();
+  const auto &seeds = d_seeds[0];
+  const auto nSeeds = seeds.size();
+  int localStack[localStackSizePerSeed] = {-1};
+  int localStackSize = 0;
+  for (int i = 0; i < nSeeds; i++) {
+    // assign cluster to seed[idxCls]
+    int idxThisSeed = seeds[i];
+    points.clusterIndex[idxThisSeed] = i;
+    // push_back idThisSeed to localStack
+    // assert((localStackSize < localStackSizePerSeed));
 
-    // loop over followers
-    for (int j : followers) {
-      // pass id from i to a i's follower
-      points.clusterIndex[j] = points.clusterIndex[i];
-      // push this follower to localStack
-      localStack.push_back(j);
+    localStack[localStackSize] = idxThisSeed;
+    localStackSize++;
+    // process all elements in localStack
+    while (localStackSize > 0) {
+      // get last element of localStack
+      // assert((localStackSize - 1 < localStackSizePerSeed));
+      int idxEndOfLocalStack = localStack[localStackSize - 1];
+      int temp_clusterIndex = points.clusterIndex[idxEndOfLocalStack];
+      // pop_back last element of localStack
+      // assert((localStackSize - 1 < localStackSizePerSeed));
+      localStack[localStackSize - 1] = -1;
+      localStackSize--;
+      const auto &followers = d_followers[idxEndOfLocalStack];
+      const auto followers_size = d_followers[idxEndOfLocalStack].size();
+      // loop over followers of last element of localStack
+      for (int j = 0; j < followers_size; ++j) {
+        // pass id to follower
+        int follower = followers[j];
+        points.clusterIndex[follower] = temp_clusterIndex;
+        // push_back follower to localStack
+        // assert((localStackSize < localStackSizePerSeed));
+        localStack[localStackSize] = follower;
+        localStackSize++;
+      }
     }
   }
+  // while (!localStack.empty()) {
+  //   int i = localStack.back();
+  //   auto &followers = points.followers[i];
+  //   localStack.pop_back();
+
+  //   // loop over followers
+  //   for (int j : followers) {
+  //     // pass id from i to a i's follower
+  //     points.clusterIndex[j] = points.clusterIndex[i];
+  //     // push this follower to localStack
+  //     localStack.push_back(j);
+  //   }
+  // }
 };
 
 #endif

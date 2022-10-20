@@ -23,6 +23,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     edm::EDGetTokenT<PointsCloud> pointsCloudToken_;
     edm::EDPutTokenT<cms::alpakatools::Product<Queue, PointsCloudAlpaka>> clusterToken_;
+    std::unique_ptr<CLUEAlgoAlpaka> clueAlgo;
   };
 
   CLUEAlpakaClusterizer::CLUEAlpakaClusterizer(edm::ProductRegistry& reg)
@@ -34,10 +35,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::ScopedContextProduce<Queue> ctx(event.streamID());
     Parameters const& par = eventSetup.get<Parameters>();
     auto stream = ctx.stream();
-    CLUEAlgoAlpaka clueAlgo(pc.x.size(),par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-    clueAlgo.makeClusters(pc); 
+    PointsCloudAlpaka d_pc{stream, static_cast<int>(pc.x.size())};
+    if (!clueAlgo)
+      clueAlgo = std::make_unique<CLUEAlgoAlpaka>(stream, par.dc, par.rhoc, par.outlierDeltaFactor);
+    // CLUEAlgoAlpaka clueAlgo(pc.x.size(), par.dc, par.rhoc, par.outlierDeltaFactor, stream);
+    // clueAlgo.makeClusters(pc, d_pc);
+    clueAlgo->makeClusters(pc, d_pc);
 
-    ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
+    // ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
+    ctx.emplace(event, clusterToken_, std::move(d_pc));
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

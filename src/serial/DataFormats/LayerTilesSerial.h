@@ -7,10 +7,12 @@
 #include <cstdint>
 
 #include "DataFormats/LayerTilesConstants.h"
+// #include "DataFormats/cudaCompat.h"
+#include "DataFormats/VecArray.h"
 
 class LayerTilesSerial {
 public:
-  LayerTilesSerial() { layerTiles_.resize(LayerTilesConstants::nColumns * LayerTilesConstants::nRows); }
+  // LayerTilesSerial() { layerTiles_.resize(LayerTilesConstants::nColumns * LayerTilesConstants::nRows); }
 
   void fill(const std::vector<float>& x, const std::vector<float>& y) {
     auto cellsSize = x.size();
@@ -51,16 +53,24 @@ public:
     return std::array<int, 4>({{xBinMin, xBinMax, yBinMin, yBinMax}});
   }
 
-  void clear() {
+  inline constexpr void clear() {
     for (auto& t : layerTiles_) {
-      t.clear();
+      t.reset();
     }
   }
 
-  std::vector<int>& operator[](int globalBinId) { return layerTiles_[globalBinId]; }
+  inline constexpr void clear(int i) { layerTiles_[i].reset(); }
+
+  // std::vector<int>& operator[](int globalBinId) { return layerTiles_[globalBinId]; }
+  cms::cuda::VecArray<int, LayerTilesConstants::maxTileDepth>& operator[](int globalBinId) {
+    return layerTiles_[globalBinId];
+  }
 
 private:
-  std::vector<std::vector<int>> layerTiles_;
+  // std::vector<std::vector<int>> layerTiles_;
+  cms::cuda::VecArray<cms::cuda::VecArray<int, LayerTilesConstants::maxTileDepth>,
+                      LayerTilesConstants::nColumns * LayerTilesConstants::nRows>
+      layerTiles_;
 };
 
 #endif  //LayerTiles_h

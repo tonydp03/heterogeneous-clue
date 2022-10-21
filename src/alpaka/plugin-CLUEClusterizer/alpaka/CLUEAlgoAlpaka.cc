@@ -32,7 +32,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // alpaka::memset(queue_, (*d_hist), 0x00, static_cast<uint32_t>(NLAYERS));
     alpaka::memset(queue_, (*d_seeds), 0x00);
     // alpaka::memset(queue_, (*d_followers), 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    const Idx blockSize = 256;
+    const Idx blockSize = 1024;
     Idx gridSize = std::ceil(host_pc.x.size() / static_cast<float>(blockSize));
     auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
 

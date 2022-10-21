@@ -10,12 +10,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   struct KernelResetHist {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(const TAcc &acc,
-                                  LayerTilesAlpaka *d_hist) const {
-        cms::alpakatools::for_each_element_in_grid(acc, LayerTilesConstants::nRows*LayerTilesConstants::nColumns, [&](uint32_t i) {
-          for(int layerId=0; layerId< NLAYERS; ++layerId)
-            d_hist[layerId].clear(i);
-      });
+    ALPAKA_FN_ACC void operator()(const TAcc &acc, LayerTilesAlpaka *d_hist) const {
+      cms::alpakatools::for_each_element_in_grid(
+          acc, LayerTilesConstants::nRows * LayerTilesConstants::nColumns, [&](uint32_t i) {
+            for (int layerId = 0; layerId < NLAYERS; ++layerId)
+              d_hist[layerId].clear(i);
+          });
     }
   };
 
@@ -24,9 +24,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
                                   cms::alpakatools::VecArray<int, maxNFollowers> *d_followers,
                                   uint32_t const &numberOfPoints) const {
-        cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) {
-          d_followers[i].reset();
-      });
+      cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) { d_followers[i].reset(); });
     }
   };
 
@@ -50,7 +48,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   pointsView *d_points,
                                   float dc,
                                   uint32_t const &numberOfPoints) const {
-      const float dcSquared = dc*dc;
+      const float dcSquared = dc * dc;
       cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) {
         float rhoi{0.f};
         int layeri = d_points->layer[i];
@@ -64,7 +62,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             //get the id of this bin
             int binId = d_hist[layeri].getGlobalBinByBin(xBin, yBin);
             //get the size of this bin
-            const auto& my_hist = d_hist[layeri][binId];
+            const auto &my_hist = d_hist[layeri][binId];
             int binSize = my_hist.size();
             //iterate inside this bin
             for (int binIter = 0; binIter < binSize; binIter++) {
@@ -92,7 +90,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   float dc,
                                   uint32_t const &numberOfPoints) const {
       float dm = outlierDeltaFactor * dc;
-      float dm_squared = dm*dm;
+      float dm_squared = dm * dm;
       cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) {
         int layeri = d_points->layer[i];
         float deltai = std::numeric_limits<float>::max();
@@ -108,10 +106,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             // get the id of this bin
             int binId = d_hist[layeri].getGlobalBinByBin(xBin, yBin);
             // get the size of this bin
-            int binSize = d_hist[layeri][binId].size(); 
+            const auto &my_hist = d_hist[layeri][binId];
+            int binSize = my_hist.size();
             //iterate inside this bin
             for (int binIter = 0; binIter < binSize; binIter++) {
-              uint32_t j = d_hist[layeri][binId][binIter];
+              uint32_t j = my_hist[binIter];
               // query N'_{dm}(i)
               float xj = d_points->x[j];
               float yj = d_points->y[j];
@@ -120,7 +119,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               // in the rare case where rho is the same, use detid
               foundHigher = foundHigher || ((d_points->rho[j] == rhoi) && (j > i));
               if (foundHigher && dist_ij_squared <= dm_squared) {
-                // definitio of N'_{dm}(i)
+                // definition of N'_{dm}(i)
                 // find the nearest point within N'_{dm}(i)
                 if (dist_ij_squared < deltai) {
                   // update deltai and nearestHigheri
@@ -188,29 +187,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         int idxThisSeed = seeds[idxCls];
         d_points->clusterIndex[idxThisSeed] = idxCls;
         // push_back idThisSeed to localStack
-        assert((localStackSize < localStackSizePerSeed));
-
+        // assert((localStackSize < localStackSizePerSeed));
         localStack[localStackSize] = idxThisSeed;
         localStackSize++;
         // process all elements in localStack
         while (localStackSize > 0) {
           // get last element of localStack
-          assert((localStackSize - 1 < localStackSizePerSeed));
+          // assert((localStackSize - 1 < localStackSizePerSeed));
           int idxEndOfLocalStack = localStack[localStackSize - 1];
           int temp_clusterIndex = d_points->clusterIndex[idxEndOfLocalStack];
           // pop_back last element of localStack
-          assert((localStackSize - 1 < localStackSizePerSeed));
+          // assert((localStackSize - 1 < localStackSizePerSeed));
           localStack[localStackSize - 1] = -1;
           localStackSize--;
-          const auto& followers = d_followers[idxEndOfLocalStack];
+          const auto &followers = d_followers[idxEndOfLocalStack];
           const auto followers_size = d_followers[idxEndOfLocalStack].size();
           // loop over followers of last element of localStack
-          for (int j =0; j< followers_size; ++j) {
+          for (int j = 0; j < followers_size; ++j) {
             // pass id to follower
             int follower = followers[j];
             d_points->clusterIndex[follower] = temp_clusterIndex;
             // push_back follower to localStack
-            assert((localStackSize < localStackSizePerSeed));
+            // assert((localStackSize < localStackSizePerSeed));
             localStack[localStackSize] = follower;
             localStackSize++;
           }

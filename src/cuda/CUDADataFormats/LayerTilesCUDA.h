@@ -56,6 +56,10 @@ public:
       t.reset();
   }
 
+  __host__ __device__ void clear(int i) {
+    layerTiles_[i].reset();
+  }
+
   __host__ __device__ CUDAVect& operator[](int globalBinId) { return layerTiles_[globalBinId]; }
 
 private:

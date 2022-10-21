@@ -9,7 +9,6 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-
   class PointsCloudAlpaka {
   public:
     PointsCloudAlpaka() = delete;

@@ -262,16 +262,16 @@ int main(int argc, char** argv) {
       par.produceOutput = static_cast<bool>(std::stoi(value));
     }
     iFile.close();
-
     std::cerr << "Running CLUE algorithm with the following parameters: \n";
     std::cerr << "dc = " << par.dc << '\n';
     std::cerr << "rhoc = " << par.rhoc << '\n';
     std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
-
     if (par.produceOutput) {
       transfer = true;
       std::cerr << "Producing output at the end" << std::endl;
     }
+    // if (validation || transfer)
+    //   par.putOutputInEvent = true;
 
     if (not empty) {
       // host-only ESModules

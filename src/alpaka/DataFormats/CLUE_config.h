@@ -10,6 +10,7 @@ struct Parameters {
   float rhoc = 25;
   float outlierDeltaFactor = 2;
   bool produceOutput = true;
+  // bool putOutputInEvent = false;
 };
 
 template <typename T>
@@ -21,9 +22,9 @@ std::string to_string_with_precision(const T a_value, const int n = 6) {
 }
 
 inline std::string create_outputfileName(int const& EventId,
-                                          float const& dc,
-                                          float const& rhoc,
-                                          float const& outlierDeltaFactor) {
+                                         float const& dc,
+                                         float const& rhoc,
+                                         float const& outlierDeltaFactor) {
   std::string underscore = "_";
   std::string filename = "Event";
   filename.append(underscore);

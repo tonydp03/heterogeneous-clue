@@ -11,6 +11,7 @@
 #include "AlpakaDataFormats/alpaka/PointsCloudAlpaka.h"
 #include "CLUEAlgoAlpaka.h"
 
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   class CLUEAlpakaClusterizer : public edm::EDProducer {
@@ -35,18 +36,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::ScopedContextProduce<Queue> ctx(event.streamID());
     Parameters const& par = eventSetup.get<Parameters>();
     auto stream = ctx.stream();
-    // if(par.putOutputInEvent){
-    //   CLUEAlgoAlpaka clueAlgo(pc.x.size(), par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-    //   clueAlgo.makeClusters(pc);
-    //   ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
-    // } else{
-    if (!clueAlgo) {
-      constexpr int reserve = 1000000;
-      clueAlgo = std::make_unique<CLUEAlgoAlpaka>(reserve, par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-    }
-    clueAlgo->makeClusters(pc);
+    PointsCloudAlpaka d_points(stream, pc.x.size());
+    if (!clueAlgo)
+      clueAlgo = std::make_unique<CLUEAlgoAlpaka>(par.dc, par.rhoc, par.outlierDeltaFactor, stream);
+    clueAlgo->makeClusters(pc, d_points, stream);
+    ctx.emplace(event, clusterToken_, std::move(d_points));
   }
-  // }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
 DEFINE_FWK_ALPAKA_MODULE(CLUEAlpakaClusterizer);

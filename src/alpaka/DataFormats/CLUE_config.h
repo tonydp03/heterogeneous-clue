@@ -10,7 +10,6 @@ struct Parameters {
   float rhoc = 25;
   float outlierDeltaFactor = 2;
   bool produceOutput = true;
-  // bool putOutputInEvent = false;
 };
 
 template <typename T>

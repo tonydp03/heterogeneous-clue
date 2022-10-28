@@ -30,11 +30,11 @@ namespace {
               << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
                  "(default -1 for disabled; conflicts with --maxEvents)\n"
               << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "data/input/raw.bin)'\n"
+                 "data/input/raw2D.bin for CLUE 2D and data/input/raw3D.bin for CLUE 3D)'\n"
               << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
-                 "produceOutput) to run CLUE (default 'config/hgcal_config.csv' in the directory "
-                 "of the executable)\n"
-              << " --validation        Run (rudimentary) validation at the end\n"
+                 "produceOutput) to run CLUE 2D (default 'config/hgcal_config.csv' in the directory "
+                 "of the executable); not necessary for CLUE 3D\n"
+              << " --validation        Run (rudimentary) validation at the end (CLUE 2D only)\n"
               << " --empty             Ignore all producers (for testing only)\n"
               << std::endl;
   }
@@ -106,51 +106,48 @@ int main(int argc, char** argv) {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw.bin";
+    if (dim == 2)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
+    else if (dim == 3)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw3D.bin";
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (configFile.empty()) {
+  if ((configFile.empty()) and (dim == 2)) {
     configFile = std::filesystem::path(args[0]).parent_path() / "config" / "hgcal_config.csv";
   }
-  if (not std::filesystem::exists(configFile)) {
+  if ((not std::filesystem::exists(configFile)) and (dim == 2)) {
     std::cout << "Config file '" << configFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
-  }
-
-  Parameters par;
-  std::ifstream iFile(configFile);
-  std::string value = "";
-  while (getline(iFile, value, ',')) {
-    par.dc = std::stof(value);
-    getline(iFile, value, ',');
-    par.rhoc = std::stof(value);
-    getline(iFile, value, ',');
-    par.outlierDeltaFactor = std::stof(value);
-    getline(iFile, value);
-    par.produceOutput = static_cast<bool>(std::stoi(value));
-  }
-  iFile.close();
-
-  if (dim == 2)
-    std::cout << "Running CLUE 2D algorithm with the following parameters: \n";
-  else
-    std::cout << "Running CLUE 3D algorithm with the following parameters: \n";
-  std::cout << "dc = " << par.dc << '\n';
-  std::cout << "rhoc = " << par.rhoc << '\n';
-  std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
-
-  if (par.produceOutput) {
-    std::cout << "Producing output at the end" << std::endl;
   }
 
   // Initialize EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not empty) {
-    if (dim == 2) {
+  if (dim == 2) {
+    Parameters par;
+    std::ifstream iFile(configFile);
+    std::string value = "";
+    while (getline(iFile, value, ',')) {
+      par.dc = std::stof(value);
+      getline(iFile, value, ',');
+      par.rhoc = std::stof(value);
+      getline(iFile, value, ',');
+      par.outlierDeltaFactor = std::stof(value);
+      getline(iFile, value);
+      par.produceOutput = static_cast<bool>(std::stoi(value));
+    }
+    iFile.close();
+    std::cerr << "Running CLUE 2D algorithm with the following parameters: \n";
+    std::cerr << "dc = " << par.dc << '\n';
+    std::cerr << "rhoc = " << par.rhoc << '\n';
+    std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+    if (par.produceOutput) {
+      std::cerr << "Producing output at the end" << std::endl;
+    }
+    if (not empty) {
       edmodules = {"CLUESerialClusterizer"};
       esmodules = {"CLUESerialClusterizerESProducer"};
       if (par.produceOutput) {
@@ -161,19 +158,17 @@ int main(int argc, char** argv) {
         esmodules.emplace_back("CLUEValidatorESProducer");
         edmodules.emplace_back("CLUEValidator");
       }
-    } else if (dim == 3) {
+    }
+  } else {
+    std::cerr << "Running CLUE 3D algorithm with default parameters\n";
+    if (not empty) {
       edmodules = {"CLUESerialTracksterizer"};
-      esmodules = {"CLUESerialTracksterizerESProducer"};
-      if (par.produceOutput) {
-        // esmodules.emplace_back("CLUEOutputESProducer");
-        // edmodules.emplace_back("CLUEOutputProducer");
-      }
       if (validation) {
-        // esmodules.emplace_back("CLUEValidatorESProducer");
-        // edmodules.emplace_back("CLUEValidator");
+        std::cerr << "Validation not available for CLUE 3D" << std::endl;
       }
     }
   }
+
   edm::EventProcessor processor(dim,
                                 maxEvents,
                                 runForMinutes,

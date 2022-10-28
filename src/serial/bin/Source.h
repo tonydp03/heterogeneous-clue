@@ -75,6 +75,7 @@ namespace edm {
     EDPutTokenT<ClusterCollection> const clusterToken_;
     std::vector<ClusterCollection> clusters_;
   };
+
 }  // namespace edm
 
 #endif

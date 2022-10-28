@@ -11,15 +11,19 @@
 #include "EventProcessor.h"
 
 namespace edm {
-  EventProcessor::EventProcessor(int maxEvents,
+  EventProcessor::EventProcessor(int dims,
+                                 int maxEvents,
                                  int runForMinutes,
                                  int numberOfStreams,
                                  Alternatives alternatives,
                                  std::vector<std::string> const& esproducers,
                                  std::filesystem::path const& inputFile,
                                  std::filesystem::path const& configFile,
-                                 bool validation)
-      : source_(maxEvents, runForMinutes, registry_, inputFile, validation) {
+                                 bool validation) {
+    if (dims == 2)
+      source_ = new Source2D(maxEvents, runForMinutes, registry_, inputFile, validation);
+    else if (dims == 3)
+      source_ = new Source3D(maxEvents, runForMinutes, registry_, inputFile, validation);
     for (auto const& name : esproducers) {
       pluginManager_.load(name);
       if (name == "CLUEAlpakaClusterizerESProducer") {
@@ -45,14 +49,14 @@ namespace edm {
       lower_range = upper_range;
       upper_range = static_cast<int>(std::round(cumulative * numberOfStreams / total));
       for (int i = lower_range; i < upper_range; ++i) {
-        schedules_.emplace_back(registry_, pluginManager_, &source_, &eventSetup_, i, alternative.path);
+        schedules_.emplace_back(registry_, pluginManager_, source_, &eventSetup_, i, alternative.path);
       }
       streamsPerBackend_.emplace_back(alternative.backend, upper_range - lower_range);
     }
   }
 
   void EventProcessor::runToCompletion() {
-    source_.startProcessing();
+    source_->startProcessing();
     // The task that waits for all other work
     FinalWaitingTask globalWaitTask;
     tbb::task_group group;

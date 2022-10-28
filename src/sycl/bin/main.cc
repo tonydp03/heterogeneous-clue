@@ -31,7 +31,7 @@ namespace {
               << " --runForMinutes     Continue processing the set of 100 events until this many minutes have passed "
                  "(default -1 for disabled; conflicts with --maxEvents)\n"
               << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "'data/input/raw.bin')\n"
+                 "'data/input/raw2D.bin')\n"
               << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
                  "produceOutput) to run CLUE (default 'config/hgcal_config.csv'\n"
               << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
@@ -43,7 +43,6 @@ namespace {
 
 int main(int argc, char** argv) try {
   // Parse command line arguments
-  setenv("SYCL_DEVICE_FILTER", "cpu,gpu,host", true);
   std::vector<std::string> args(argv, argv + argc);
   int numberOfThreads = 1;
   int numberOfStreams = 0;
@@ -108,7 +107,7 @@ int main(int argc, char** argv) try {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw.bin";
+    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;
@@ -139,7 +138,7 @@ int main(int argc, char** argv) try {
   }
   iFile.close();
 
-  std::cerr << "Running CLUE algorithm with the following parameters: \n";
+  std::cerr << "Running CLUE 2D algorithm with the following parameters: \n";
   std::cerr << "dc = " << par.dc << '\n';
   std::cerr << "rhoc = " << par.rhoc << '\n';
   std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;

@@ -8,11 +8,14 @@ class CLUE3DAlgoSerial {
 public:
   // constructor
   CLUE3DAlgoSerial() {
-      hist_ = new TICLLayerTiles;
-      histSoA_ = new TICLLayerTiles;
+    hist_ = new TICLLayerTiles;
+    histSoA_ = new TICLLayerTiles;
   }
 
-  ~CLUE3DAlgoSerial() {delete hist_; delete histSoA_;};
+  ~CLUE3DAlgoSerial() {
+    delete hist_;
+    delete histSoA_;
+  };
 
   void makeTracksters(ClusterCollection const &host_pc);
 
@@ -23,7 +26,6 @@ public:
   TICLLayerTiles *histSoA_;
 
 private:
-
   void setup(ClusterCollection const &pc);
 };
 

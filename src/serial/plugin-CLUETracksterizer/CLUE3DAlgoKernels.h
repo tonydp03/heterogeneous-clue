@@ -8,36 +8,28 @@
 
 // all the functions here need to be changed
 
-void KernelComputeHistogram(TICLLayerTiles &d_hist,
-    ClusterCollectionSerialOnLayers &points) {
+void KernelComputeHistogram(TICLLayerTiles &d_hist, ClusterCollectionSerialOnLayers &points) {
   for (unsigned int layer = 0; layer < points.size(); layer++) {
     for (unsigned int idxSoAOnLyr = 0; idxSoAOnLyr < points[layer].x.size(); ++idxSoAOnLyr) {
-      d_hist.fill(layer, std::abs(points[layer].eta[idxSoAOnLyr]),
-          points[layer].phi[idxSoAOnLyr],
-          idxSoAOnLyr);
+      d_hist.fill(layer, std::abs(points[layer].eta[idxSoAOnLyr]), points[layer].phi[idxSoAOnLyr], idxSoAOnLyr);
     }
   }
 };
 
-void KernelComputeHistogramSoA(TICLLayerTiles &d_histSoA,
-    ClusterCollectionSerial &points) {
+void KernelComputeHistogramSoA(TICLLayerTiles &d_histSoA, ClusterCollectionSerial &points) {
   for (unsigned int clusterIdxSoA = 0; clusterIdxSoA < points.x.size(); clusterIdxSoA++) {
-      d_histSoA.fill(points.layer[clusterIdxSoA],
-          std::abs(points.eta[clusterIdxSoA]),
-          points.phi[clusterIdxSoA],
-          clusterIdxSoA);
+    d_histSoA.fill(
+        points.layer[clusterIdxSoA], std::abs(points.eta[clusterIdxSoA]), points.phi[clusterIdxSoA], clusterIdxSoA);
   }
 };
 
 void KernelCalculateDensitySoA(TICLLayerTiles &d_hist,
-    ClusterCollectionSerial &points,
-    int algoVerbosity = 0,
-    int densitySiblingLayers = 3,
-    int densityXYDistanceSqr = 3.24,
-    float kernelDensityFactor = 0.2,
-    bool densityOnSameLayer = false
-    ) {
-
+                               ClusterCollectionSerial &points,
+                               int algoVerbosity = 0,
+                               int densitySiblingLayers = 3,
+                               int densityXYDistanceSqr = 3.24,
+                               float kernelDensityFactor = 0.2,
+                               bool densityOnSameLayer = false) {
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TICLLayerTiles::constants_type_t::nPhiBins;
   constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
@@ -96,14 +88,12 @@ void KernelCalculateDensitySoA(TICLLayerTiles &d_hist,
           int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
           if (algoVerbosity > 0) {
             std::cout << "iphi: " << iphi << std::endl;
-            std::cout
-              << "Entries in tileBin: " << tileOnLayer[offset + iphi].size() << std::endl;
+            std::cout << "Entries in tileBin: " << tileOnLayer[offset + iphi].size() << std::endl;
           }
           for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
             //              auto const &clustersLayer = points[currentLayer];
             if (algoVerbosity > 0) {
-              std::cout
-                << "OtherLayer: " << currentLayer << " SoaIDX: " << otherClusterIdx << std::endl;
+              std::cout << "OtherLayer: " << currentLayer << " SoaIDX: " << otherClusterIdx << std::endl;
               std::cout << "OtherEta: " << points.eta[otherClusterIdx] << std::endl;
               std::cout << "OtherPhi: " << points.phi[otherClusterIdx] << std::endl;
             }
@@ -112,43 +102,41 @@ void KernelCalculateDensitySoA(TICLLayerTiles &d_hist,
             // Silicon has yet to be studied further.
             if (points.isSilicon[clusterIdxSoA]) {
               reachable = isReachable(points.r_over_absz[clusterIdxSoA] * points.z[clusterIdxSoA],
-                  points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
-                  points.phi[clusterIdxSoA],
-                  points.phi[otherClusterIdx],
-                  densityXYDistanceSqr);
+                                      points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
+                                      points.phi[clusterIdxSoA],
+                                      points.phi[otherClusterIdx],
+                                      densityXYDistanceSqr);
             } else {
               reachable = isReachable(points.r_over_absz[clusterIdxSoA] * points.z[clusterIdxSoA],
-                  points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
-                  points.phi[clusterIdxSoA],
-                  points.phi[otherClusterIdx],
-                  points.radius[clusterIdxSoA] * points.radius[clusterIdxSoA]);
+                                      points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
+                                      points.phi[clusterIdxSoA],
+                                      points.phi[otherClusterIdx],
+                                      points.radius[clusterIdxSoA] * points.radius[clusterIdxSoA]);
             }
             if (algoVerbosity > 0) {
               std::cout << "Distance[eta,phi]: "
-                << reco::deltaR2(points.eta[clusterIdxSoA],
-                    points.phi[clusterIdxSoA],
-                    points.eta[otherClusterIdx],
-                    points.phi[otherClusterIdx]) << std::endl;
-              auto dist = distance_debug(
-                  points.r_over_absz[clusterIdxSoA],
-                  points.r_over_absz[otherClusterIdx],
-                  points.r_over_absz[clusterIdxSoA] * std::abs(points.phi[clusterIdxSoA]),
-                  points.r_over_absz[otherClusterIdx] * std::abs(points.phi[otherClusterIdx]));
+                        << reco::deltaR2(points.eta[clusterIdxSoA],
+                                         points.phi[clusterIdxSoA],
+                                         points.eta[otherClusterIdx],
+                                         points.phi[otherClusterIdx])
+                        << std::endl;
+              auto dist = distance_debug(points.r_over_absz[clusterIdxSoA],
+                                         points.r_over_absz[otherClusterIdx],
+                                         points.r_over_absz[clusterIdxSoA] * std::abs(points.phi[clusterIdxSoA]),
+                                         points.r_over_absz[otherClusterIdx] * std::abs(points.phi[otherClusterIdx]));
               std::cout << "Distance[cm]: " << (dist * points.z[clusterIdxSoA]) << std::endl;
-              std::cout
-                << "Energy Other:   " << points.energy[otherClusterIdx] << std::endl;
+              std::cout << "Energy Other:   " << points.energy[otherClusterIdx] << std::endl;
               std::cout << "Cluster radius: " << points.radius[clusterIdxSoA] << std::endl;
             }
             if (reachable) {
               float factor_same_layer_different_cluster = (onSameLayer && !densityOnSameLayer) ? 0.f : 1.f;
-              auto energyToAdd = ((clusterIdxSoA == otherClusterIdx)
-                  ? 1.f
-                  : kernelDensityFactor * factor_same_layer_different_cluster) *
-                points.energy[otherClusterIdx];
+              auto energyToAdd =
+                  ((clusterIdxSoA == otherClusterIdx) ? 1.f
+                                                      : kernelDensityFactor * factor_same_layer_different_cluster) *
+                  points.energy[otherClusterIdx];
               points.rho[clusterIdxSoA] += energyToAdd;
               if (algoVerbosity > 0) {
-                std::cout
-                  << "Adding " << energyToAdd << " partial " << points.rho[clusterIdxSoA] << std::endl;
+                std::cout << "Adding " << energyToAdd << " partial " << points.rho[clusterIdxSoA] << std::endl;
               }
             }
           }  // end of loop on possible compatible clusters
@@ -156,20 +144,18 @@ void KernelCalculateDensitySoA(TICLLayerTiles &d_hist,
       }      // end of loop over eta-bin region
     }        // end of loop on the sibling layers
   }
-//  for (unsigned int i = 0; i < points.rho.size(); ++i) {
-//    std::cout << "Layer " << points.layer[i] << " i " << i << " rho " << points.rho[i] << std::endl;
-//  }
+  //  for (unsigned int i = 0; i < points.rho.size(); ++i) {
+  //    std::cout << "Layer " << points.layer[i] << " i " << i << " rho " << points.rho[i] << std::endl;
+  //  }
 }
 
 void KernelCalculateDensity(TICLLayerTiles &d_hist,
-    ClusterCollectionSerialOnLayers &points,
-    int algoVerbosity = 0,
-    int densitySiblingLayers = 3,
-    int densityXYDistanceSqr = 3.24,
-    float kernelDensityFactor = 0.2,
-    bool densityOnSameLayer = false
-    ) {
-
+                            ClusterCollectionSerialOnLayers &points,
+                            int algoVerbosity = 0,
+                            int densitySiblingLayers = 3,
+                            int densityXYDistanceSqr = 3.24,
+                            float kernelDensityFactor = 0.2,
+                            bool densityOnSameLayer = false) {
   // To be verified is those numbers are available via types.
 
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
@@ -232,14 +218,12 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
             int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
             if (algoVerbosity > 0) {
               std::cout << "iphi: " << iphi << std::endl;
-              std::cout
-                << "Entries in tileBin: " << tileOnLayer[offset + iphi].size() << std::endl;
+              std::cout << "Entries in tileBin: " << tileOnLayer[offset + iphi].size() << std::endl;
             }
             for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
               auto const &clustersLayer = points[currentLayer];
               if (algoVerbosity > 0) {
-                std::cout
-                  << "OtherLayer: " << currentLayer << " SoaIDX: " << otherClusterIdx << std::endl;
+                std::cout << "OtherLayer: " << currentLayer << " SoaIDX: " << otherClusterIdx << std::endl;
                 std::cout << "OtherEta: " << clustersLayer.eta[otherClusterIdx] << std::endl;
                 std::cout << "OtherPhi: " << clustersLayer.phi[otherClusterIdx] << std::endl;
               }
@@ -248,63 +232,62 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
               // Silicon has yet to be studied further.
               if (clustersOnLayer.isSilicon[i]) {
                 reachable = isReachable(clustersOnLayer.r_over_absz[i] * clustersOnLayer.z[i],
-                    clustersLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
-                    clustersOnLayer.phi[i],
-                    clustersLayer.phi[otherClusterIdx],
-                    densityXYDistanceSqr);
+                                        clustersLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
+                                        clustersOnLayer.phi[i],
+                                        clustersLayer.phi[otherClusterIdx],
+                                        densityXYDistanceSqr);
               } else {
                 reachable = isReachable(clustersOnLayer.r_over_absz[i] * clustersOnLayer.z[i],
-                    clustersLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
-                    clustersOnLayer.phi[i],
-                    clustersLayer.phi[otherClusterIdx],
-                    clustersOnLayer.radius[i] * clustersOnLayer.radius[i]);
+                                        clustersLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
+                                        clustersOnLayer.phi[i],
+                                        clustersLayer.phi[otherClusterIdx],
+                                        clustersOnLayer.radius[i] * clustersOnLayer.radius[i]);
               }
               if (algoVerbosity > 0) {
                 std::cout << "Distance[eta,phi]: "
-                  << reco::deltaR2(clustersOnLayer.eta[i],
-                      clustersOnLayer.phi[i],
-                      clustersLayer.eta[otherClusterIdx],
-                      clustersLayer.phi[otherClusterIdx]) << std::endl;
+                          << reco::deltaR2(clustersOnLayer.eta[i],
+                                           clustersOnLayer.phi[i],
+                                           clustersLayer.eta[otherClusterIdx],
+                                           clustersLayer.phi[otherClusterIdx])
+                          << std::endl;
                 auto dist = distance_debug(
                     clustersOnLayer.r_over_absz[i],
                     clustersLayer.r_over_absz[otherClusterIdx],
                     clustersOnLayer.r_over_absz[i] * std::abs(clustersOnLayer.phi[i]),
                     clustersLayer.r_over_absz[otherClusterIdx] * std::abs(clustersLayer.phi[otherClusterIdx]));
                 std::cout << "Distance[cm]: " << (dist * clustersOnLayer.z[i]) << std::endl;
-                std::cout
-                  << "Energy Other:   " << clustersLayer.energy[otherClusterIdx] << std::endl;
+                std::cout << "Energy Other:   " << clustersLayer.energy[otherClusterIdx] << std::endl;
                 std::cout << "Cluster radius: " << clustersOnLayer.radius[i] << std::endl;
               }
               if (reachable) {
                 float factor_same_layer_different_cluster = (onSameLayer && !densityOnSameLayer) ? 0.f : 1.f;
                 auto energyToAdd = (onSameLayer && (i == otherClusterIdx)
-                    ? 1.f
-                    : kernelDensityFactor * factor_same_layer_different_cluster) *
-                  clustersLayer.energy[otherClusterIdx];
+                                        ? 1.f
+                                        : kernelDensityFactor * factor_same_layer_different_cluster) *
+                                   clustersLayer.energy[otherClusterIdx];
                 clustersOnLayer.rho[i] += energyToAdd;
                 if (algoVerbosity > 0) {
-                  std::cout
-                    << "Adding " << energyToAdd << " partial " << clustersOnLayer.rho[i] << std::endl;
+                  std::cout << "Adding " << energyToAdd << " partial " << clustersOnLayer.rho[i] << std::endl;
                 }
               }
             }  // end of loop on possible compatible clusters
           }    // end of loop over phi-bin region
         }      // end of loop over eta-bin region
       }        // end of loop on the sibling layers
-    }  // end of loop over clusters on this layer
+    }          // end of loop over clusters on this layer
   }
-//  for (unsigned int l = 0; l < nLayers; ++l) {
-//    for (unsigned int i = 0; i < points[l].rho.size(); ++i) {
-//      std::cout << "Layer:" << l << " i " << i << " rho " << points[l].rho[i] << std::endl;
-//    }
-//  }
+  //  for (unsigned int l = 0; l < nLayers; ++l) {
+  //    for (unsigned int i = 0; i < points[l].rho.size(); ++i) {
+  //      std::cout << "Layer:" << l << " i " << i << " rho " << points[l].rho[i] << std::endl;
+  //    }
+  //  }
 }
 
 void KernelComputeDistanceToHigherSoA(TICLLayerTiles &d_hist,
-    ClusterCollectionSerial &points,
-    int algoVerbosity = 0,
-    int densitySiblingLayers = 3,
-    bool nearestHigherOnSameLayer = false) {
+                                      ClusterCollectionSerial &points,
+                                      int algoVerbosity = 0,
+                                      int densitySiblingLayers = 3,
+                                      bool nearestHigherOnSameLayer = false) {
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
   constexpr int nPhiBin = TICLLayerTiles::constants_type_t::nPhiBins;
   constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
@@ -317,10 +300,9 @@ void KernelComputeDistanceToHigherSoA(TICLLayerTiles &d_hist,
     };
 
     if (algoVerbosity > 0) {
-      std::cout
-        << "Starting searching nearestHigher on " << layerId << " with rho: " << points.rho[clusterIdxSoA]
-        << " at eta, phi: " << d_hist[layerId].etaBin(points.eta[clusterIdxSoA]) << ", "
-        << d_hist[layerId].phiBin(points.phi[clusterIdxSoA]);
+      std::cout << "Starting searching nearestHigher on " << layerId << " with rho: " << points.rho[clusterIdxSoA]
+                << " at eta, phi: " << d_hist[layerId].etaBin(points.eta[clusterIdxSoA]) << ", "
+                << d_hist[layerId].phiBin(points.phi[clusterIdxSoA]);
     }
     // We need to partition the two sides of the HGCAL detector
     constexpr int lastLayerPerSide = nLayers / 2;
@@ -352,9 +334,8 @@ void KernelComputeDistanceToHigherSoA(TICLLayerTiles &d_hist,
         for (int iphi_it = phiBinMin; iphi_it <= phiBinMax; ++iphi_it) {
           int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
           if (algoVerbosity > 0) {
-            std::cout
-              << "Searching nearestHigher on " << currentLayer << " eta, phi: " << ieta << ", " << iphi_it << " "
-              << iphi << " " << offset << " " << (offset + iphi);
+            std::cout << "Searching nearestHigher on " << currentLayer << " eta, phi: " << ieta << ", " << iphi_it
+                      << " " << iphi << " " << offset << " " << (offset + iphi);
           }
           for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
             //              auto const &clustersOnOtherLayer = points[currentLayer];
@@ -362,25 +343,23 @@ void KernelComputeDistanceToHigherSoA(TICLLayerTiles &d_hist,
             auto dist_transverse = maxDelta;
             int dist_layers = std::abs(currentLayer - layerId);
             dist_transverse = distanceSqr(points.r_over_absz[clusterIdxSoA] * points.z[clusterIdxSoA],
-                points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
-                points.phi[clusterIdxSoA],
-                points.phi[otherClusterIdx]);
+                                          points.r_over_absz[otherClusterIdx] * points.z[clusterIdxSoA],
+                                          points.phi[clusterIdxSoA],
+                                          points.phi[otherClusterIdx]);
             // Add Z-scale to the final distance
             dist = dist_transverse;
             // TODO(rovere): in case of equal local density, the ordering in
             // the original CLUE3D implementaiton is bsaed on the index of
             // the LayerCclusters in the LayerClusterCollection. In this
             // case, the index is based on the ordering of the SOA indices.
-            bool foundHigher = (points.rho[otherClusterIdx] >
-                points.rho[clusterIdxSoA]) ||
-              (points.rho[otherClusterIdx] == points.rho[clusterIdxSoA] &&
-               otherClusterIdx > clusterIdxSoA);
+            // bool foundHigher =
+            //     (points.rho[otherClusterIdx] > points.rho[clusterIdxSoA]) ||
+            //     (points.rho[otherClusterIdx] == points.rho[clusterIdxSoA] && otherClusterIdx > clusterIdxSoA);
+            bool foundHigher = (points.rho[otherClusterIdx] > points.rho[clusterIdxSoA]);
             if (algoVerbosity > 0) {
-              std::cout
-                << "Searching nearestHigher on " << currentLayer
-                << " with rho: " << points.rho[otherClusterIdx]
-                << " on layerIdxInSOA: " << currentLayer << ", " << otherClusterIdx
-                << " with distance: " << sqrt(dist) << " foundHigher: " << foundHigher;
+              std::cout << "Searching nearestHigher on " << currentLayer << " with rho: " << points.rho[otherClusterIdx]
+                        << " on layerIdxInSOA: " << currentLayer << ", " << otherClusterIdx
+                        << " with distance: " << sqrt(dist) << " foundHigher: " << foundHigher;
             }
             if (foundHigher && dist <= i_delta) {
               // update i_delta
@@ -396,10 +375,9 @@ void KernelComputeDistanceToHigherSoA(TICLLayerTiles &d_hist,
 
     bool foundNearestInFiducialVolume = (i_delta != maxDelta);
     if (algoVerbosity > 0) {
-      std::cout
-        << "i_delta: " << i_delta << " passed: " << foundNearestInFiducialVolume << " " << i_nearestHigher.first
-        << " " << i_nearestHigher.second << " distances: " << nearest_distances.first << ", "
-        << nearest_distances.second;
+      std::cout << "i_delta: " << i_delta << " passed: " << foundNearestInFiducialVolume << " " << i_nearestHigher.first
+                << " " << i_nearestHigher.second << " distances: " << nearest_distances.first << ", "
+                << nearest_distances.second;
     }
     if (foundNearestInFiducialVolume) {
       points.delta[clusterIdxSoA] = nearest_distances;
@@ -432,10 +410,9 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
 
     for (unsigned int i = 0; i < numberOfClusters; i++) {
       if (algoVerbosity > 0) {
-        std::cout
-          << "Starting searching nearestHigher on " << layerId << " with rho: " << clustersOnLayer.rho[i]
-          << " at eta, phi: " << d_hist[layerId].etaBin(clustersOnLayer.eta[i]) << ", "
-          << d_hist[layerId].phiBin(clustersOnLayer.phi[i]);
+        std::cout << "Starting searching nearestHigher on " << layerId << " with rho: " << clustersOnLayer.rho[i]
+                  << " at eta, phi: " << d_hist[layerId].etaBin(clustersOnLayer.eta[i]) << ", "
+                  << d_hist[layerId].phiBin(clustersOnLayer.phi[i]);
       }
       // We need to partition the two sides of the HGCAL detector
       int lastLayerPerSide = nLayers / 2;
@@ -467,9 +444,8 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
           for (int iphi_it = phiBinMin; iphi_it <= phiBinMax; ++iphi_it) {
             int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
             if (algoVerbosity > 0) {
-              std::cout
-                << "Searching nearestHigher on " << currentLayer << " eta, phi: " << ieta << ", " << iphi_it << " "
-                << iphi << " " << offset << " " << (offset + iphi);
+              std::cout << "Searching nearestHigher on " << currentLayer << " eta, phi: " << ieta << ", " << iphi_it
+                        << " " << iphi << " " << offset << " " << (offset + iphi);
             }
             for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
               auto const &clustersOnOtherLayer = points[currentLayer];
@@ -477,25 +453,27 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
               auto dist_transverse = maxDelta;
               int dist_layers = std::abs(currentLayer - layerId);
               dist_transverse = distanceSqr(clustersOnLayer.r_over_absz[i] * clustersOnLayer.z[i],
-                  clustersOnOtherLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
-                  clustersOnLayer.phi[i],
-                  clustersOnOtherLayer.phi[otherClusterIdx]);
+                                            clustersOnOtherLayer.r_over_absz[otherClusterIdx] * clustersOnLayer.z[i],
+                                            clustersOnLayer.phi[i],
+                                            clustersOnOtherLayer.phi[otherClusterIdx]);
               // Add Z-scale to the final distance
               dist = dist_transverse;
               // TODO(rovere): in case of equal local density, the ordering in
               // the original CLUE3D implementaiton is bsaed on the index of
               // the LayerCclusters in the LayerClusterCollection. In this
               // case, the index is based on the ordering of the SOA indices.
-              bool foundHigher = (clustersOnOtherLayer.rho[otherClusterIdx] >
-                  clustersOnLayer.rho[i]) ||
-                (clustersOnOtherLayer.rho[otherClusterIdx] == clustersOnLayer.rho[i] &&
-                 otherClusterIdx > i);
+              // bool foundHigher =
+              //     (clustersOnOtherLayer.rho[otherClusterIdx] > clustersOnLayer.rho[i]) ||
+              //     (clustersOnOtherLayer.rho[otherClusterIdx] == clustersOnLayer.rho[i] && otherClusterIdx > i);
+              bool foundHigher =
+                  (clustersOnOtherLayer.rho[otherClusterIdx] > clustersOnLayer.rho[i]) ||
+                  (clustersOnOtherLayer.rho[otherClusterIdx] == clustersOnLayer.rho[i] &&
+                   clustersOnOtherLayer.r_over_absz[otherClusterIdx] > clustersOnOtherLayer.r_over_absz[i]);
               if (algoVerbosity > 0) {
-                std::cout
-                  << "Searching nearestHigher on " << currentLayer
-                  << " with rho: " << clustersOnOtherLayer.rho[otherClusterIdx]
-                  << " on layerIdxInSOA: " << currentLayer << ", " << otherClusterIdx
-                  << " with distance: " << sqrt(dist) << " foundHigher: " << foundHigher;
+                std::cout << "Searching nearestHigher on " << currentLayer
+                          << " with rho: " << clustersOnOtherLayer.rho[otherClusterIdx]
+                          << " on layerIdxInSOA: " << currentLayer << ", " << otherClusterIdx
+                          << " with distance: " << sqrt(dist) << " foundHigher: " << foundHigher;
               }
               if (foundHigher && dist <= i_delta) {
                 // update i_delta
@@ -511,10 +489,9 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
 
       bool foundNearestInFiducialVolume = (i_delta != maxDelta);
       if (algoVerbosity > 0) {
-        std::cout
-          << "i_delta: " << i_delta << " passed: " << foundNearestInFiducialVolume << " " << i_nearestHigher.first
-          << " " << i_nearestHigher.second << " distances: " << nearest_distances.first << ", "
-          << nearest_distances.second;
+        std::cout << "i_delta: " << i_delta << " passed: " << foundNearestInFiducialVolume << " "
+                  << i_nearestHigher.first << " " << i_nearestHigher.second << " distances: " << nearest_distances.first
+                  << ", " << nearest_distances.second;
       }
       if (foundNearestInFiducialVolume) {
         clustersOnLayer.delta[i] = nearest_distances;
@@ -530,12 +507,12 @@ void KernelComputeDistanceToHigher(TICLLayerTiles &d_hist,
 };
 
 int KernelFindAndAssignClustersSoA(ClusterCollectionSerial &points,
-    int algoVerbosity = 0,
-    float criticalXYDistance = 1.8, // cm
-    float criticalZDistanceLyr = 5,
-    float criticalDensity = 0.6, // GeV
-    float criticalSelfDensity = 0.15,
-    float outlierMultiplier = 2.) {
+                                   int algoVerbosity = 0,
+                                   float criticalXYDistance = 1.8,  // cm
+                                   float criticalZDistanceLyr = 5,
+                                   float criticalDensity = 0.6,  // GeV
+                                   float criticalSelfDensity = 0.15,
+                                   float outlierMultiplier = 2.) {
   unsigned int nTracksters = 0;
 
   std::vector<std::pair<int, int>> localStack;
@@ -546,21 +523,21 @@ int KernelFindAndAssignClustersSoA(ClusterCollectionSerial &points,
     // initialize tracksterIndex
     points.tracksterIndex[clusterIdxSoA] = -1;
     bool isSeed = (points.delta[clusterIdxSoA].first > critical_transverse_distance ||
-        points.delta[clusterIdxSoA].second > criticalZDistanceLyr) &&
-      (points.rho[clusterIdxSoA] >= criticalDensity) &&
-      (points.energy[clusterIdxSoA] / points.rho[clusterIdxSoA] > criticalSelfDensity);
+                   points.delta[clusterIdxSoA].second > criticalZDistanceLyr) &&
+                  (points.rho[clusterIdxSoA] >= criticalDensity) &&
+                  (points.energy[clusterIdxSoA] / points.rho[clusterIdxSoA] > criticalSelfDensity);
     if (!points.isSilicon[clusterIdxSoA]) {
       isSeed = (points.delta[clusterIdxSoA].first > points.radius[clusterIdxSoA] ||
-          points.delta[clusterIdxSoA].second > criticalZDistanceLyr) &&
-        (points.rho[clusterIdxSoA] >= criticalDensity) &&
-        (points.energy[clusterIdxSoA] / points.rho[clusterIdxSoA] > criticalSelfDensity);
+                points.delta[clusterIdxSoA].second > criticalZDistanceLyr) &&
+               (points.rho[clusterIdxSoA] >= criticalDensity) &&
+               (points.energy[clusterIdxSoA] / points.rho[clusterIdxSoA] > criticalSelfDensity);
     }
     bool isOutlier = (points.delta[clusterIdxSoA].first > outlierMultiplier * critical_transverse_distance) &&
-      (points.rho[clusterIdxSoA] < criticalDensity);
+                     (points.rho[clusterIdxSoA] < criticalDensity);
     if (isSeed) {
       if (algoVerbosity > 0) {
-        std::cout
-          << "Found seed on Layer " << layerId << " SOAidx: " << clusterIdxSoA << " assigned ClusterIdx: " << nTracksters;
+        std::cout << "Found seed on Layer " << layerId << " SOAidx: " << clusterIdxSoA
+                  << " assigned ClusterIdx: " << nTracksters;
       }
       points.tracksterIndex[clusterIdxSoA] = nTracksters++;
       points.isSeed[clusterIdxSoA] = true;
@@ -568,17 +545,16 @@ int KernelFindAndAssignClustersSoA(ClusterCollectionSerial &points,
     } else if (!isOutlier) {
       auto [lyrIdx, soaIdx] = points.nearestHigher[clusterIdxSoA];
       if (algoVerbosity > 0) {
-        std::cout
-          << "Found follower on Layer " << layerId << " SOAidx: " << clusterIdxSoA << " attached to cluster on layer: " << lyrIdx
-          << " SOAidx: " << soaIdx;
+        std::cout << "Found follower on Layer " << layerId << " SOAidx: " << clusterIdxSoA
+                  << " attached to cluster on layer: " << lyrIdx << " SOAidx: " << soaIdx;
       }
       if (lyrIdx >= 0)
         points.followers[soaIdx].emplace_back(layerId, clusterIdxSoA);
     } else {
       if (algoVerbosity > 0) {
-        std::cout
-          << "Found Outlier on Layer " << layerId << " SOAidx: " << clusterIdxSoA << " with rho: " << points.rho[clusterIdxSoA]
-          << " and delta: " << points.delta[clusterIdxSoA].first << ", " << points.delta[clusterIdxSoA].second;
+        std::cout << "Found Outlier on Layer " << layerId << " SOAidx: " << clusterIdxSoA
+                  << " with rho: " << points.rho[clusterIdxSoA] << " and delta: " << points.delta[clusterIdxSoA].first
+                  << ", " << points.delta[clusterIdxSoA].second;
       }
     }
   }
@@ -603,12 +579,12 @@ int KernelFindAndAssignClustersSoA(ClusterCollectionSerial &points,
 };
 
 int KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points,
-    int algoVerbosity = 0,
-    float criticalXYDistance = 1.8, // cm
-    float criticalZDistanceLyr = 5,
-    float criticalDensity = 0.6, // GeV
-    float criticalSelfDensity = 0.15,
-    float outlierMultiplier = 2.) {
+                                int algoVerbosity = 0,
+                                float criticalXYDistance = 1.8,  // cm
+                                float criticalZDistanceLyr = 5,
+                                float criticalDensity = 0.6,  // GeV
+                                float criticalSelfDensity = 0.15,
+                                float outlierMultiplier = 2.) {
   constexpr int nLayers = TICLLayerTiles::constants_type_t::nLayers;
   unsigned int nTracksters = 0;
 
@@ -635,8 +611,7 @@ int KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points,
                        (clustersOnLayer.rho[i] < criticalDensity);
       if (isSeed) {
         if (algoVerbosity > 0) {
-          std::cout
-              << "Found seed on Layer " << layer << " SOAidx: " << i << " assigned ClusterIdx: " << nTracksters;
+          std::cout << "Found seed on Layer " << layer << " SOAidx: " << i << " assigned ClusterIdx: " << nTracksters;
         }
         clustersOnLayer.tracksterIndex[i] = nTracksters++;
         clustersOnLayer.isSeed[i] = true;
@@ -644,17 +619,15 @@ int KernelFindAndAssignClusters(ClusterCollectionSerialOnLayers &points,
       } else if (!isOutlier) {
         auto [lyrIdx, soaIdx] = clustersOnLayer.nearestHigher[i];
         if (algoVerbosity > 0) {
-          std::cout
-              << "Found follower on Layer " << layer << " SOAidx: " << i << " attached to cluster on layer: " << lyrIdx
-              << " SOAidx: " << soaIdx;
+          std::cout << "Found follower on Layer " << layer << " SOAidx: " << i
+                    << " attached to cluster on layer: " << lyrIdx << " SOAidx: " << soaIdx;
         }
         if (lyrIdx >= 0)
           points[lyrIdx].followers[soaIdx].emplace_back(layer, i);
       } else {
         if (algoVerbosity > 0) {
-          std::cout
-              << "Found Outlier on Layer " << layer << " SOAidx: " << i << " with rho: " << clustersOnLayer.rho[i]
-              << " and delta: " << clustersOnLayer.delta[i].first << ", " << clustersOnLayer.delta[i].second;
+          std::cout << "Found Outlier on Layer " << layer << " SOAidx: " << i << " with rho: " << clustersOnLayer.rho[i]
+                    << " and delta: " << clustersOnLayer.delta[i].first << ", " << clustersOnLayer.delta[i].second;
         }
       }
     }

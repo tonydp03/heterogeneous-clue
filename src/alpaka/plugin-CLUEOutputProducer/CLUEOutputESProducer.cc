@@ -15,8 +15,7 @@ private:
 };
 
 void CLUEOutputESProducer::produce(edm::EventSetup& eventSetup) {
-  auto outDir =
-      std::make_unique<std::filesystem::path>(data_.parent_path().parent_path() / "output" / data_.filename());
+  auto outDir = std::make_unique<std::filesystem::path>(data_.parent_path().parent_path() / "output");
   eventSetup.put(std::move(outDir));
 }
 

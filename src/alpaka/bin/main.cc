@@ -33,7 +33,7 @@ namespace {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
               << "[--hip] "
 #endif
-              << "[--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
+              << "[--dim D] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
                  "PATH] [--configFile] [--transfer] [--validation] "
                  "[--empty]\n\n"
               << "Options\n"
@@ -49,18 +49,19 @@ namespace {
 #ifdef ALPAKA_ACC_GPU_HIP_PRESENT
               << " --hip               Use ROCm/HIP backend\n"
 #endif
+              << " --dim   Dimensionality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
               << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
               << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
               << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
               << " --runForMinutes     Continue processing the set of 1000 events until this many minutes have passed "
                  "(default -1 for disabled; conflicts with --maxEvents)\n"
               << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "data/input/raw.bin)'\n"
+                 "data/input/raw2D.bin)'\n"
               << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
-                 "produceOutput) to run CLUE (implies --transfer, default 'config/hgcal_config.csv' in the directory "
-                 "of the executable)\n"
+                 "produceOutput) to run CLUE 2D (default 'config/hgcal_config.csv' in the directory "
+                 "of the executable); not necessary for CLUE 3D\n"
               << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-              << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
+              << " --validation        Run (rudimentary) validation at the end (CLUE 2D only, implies --transfer)\n"
               << " --empty             Ignore all producers (for testing only)\n"
               << std::endl;
   }
@@ -121,6 +122,7 @@ int main(int argc, char** argv) {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
   std::unordered_map<Backend, float> backends;
+  int dim = 2;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -158,6 +160,8 @@ int main(int argc, char** argv) {
       getOptionalArgument(args, i, weight);
       backends.insert_or_assign(Backend::HIP, weight);
 #endif
+    } else if (*i == "--dim") {
+      getArgument(args, i, dim);
     } else if (*i == "--numberOfThreads") {
       getArgument(args, i, numberOfThreads);
     } else if (*i == "--numberOfStreams") {
@@ -188,6 +192,10 @@ int main(int argc, char** argv) {
       return EXIT_FAILURE;
     }
   }
+  if (dim != 2 and dim != 3) {
+    std::cout << "The dimensionality of the algorithm is either 2 or 3!" << std::endl;
+    return EXIT_FAILURE;
+  }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
     return EXIT_FAILURE;
@@ -199,16 +207,19 @@ int main(int argc, char** argv) {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw.bin";
+    if (dim == 2)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
+    else if (dim == 3)
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw3D.bin";
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (configFile.empty()) {
+  if ((configFile.empty()) and (dim == 2)) {
     configFile = std::filesystem::path(args[0]).parent_path() / "config" / "hgcal_config.csv";
   }
-  if (not std::filesystem::exists(configFile)) {
+  if ((not std::filesystem::exists(configFile)) and (dim == 2)) {
     std::cout << "Config file '" << configFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
@@ -234,53 +245,71 @@ int main(int argc, char** argv) {
   }
 #endif
 
-  Parameters par;
-  std::ifstream iFile(configFile);
-  std::string value = "";
-  while (getline(iFile, value, ',')) {
-    par.dc = std::stof(value);
-    getline(iFile, value, ',');
-    par.rhoc = std::stof(value);
-    getline(iFile, value, ',');
-    par.outlierDeltaFactor = std::stof(value);
-    getline(iFile, value);
-    par.produceOutput = static_cast<bool>(std::stoi(value));
-  }
-  iFile.close();
-
-  std::cout << "Running CLUE algorithm with the following parameters: \n";
-  std::cout << "dc = " << par.dc << '\n';
-  std::cout << "rhoc = " << par.rhoc << '\n';
-  std::cout << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
-
-  if (par.produceOutput) {
-    transfer = true;
-    std::cout << "Producing output at the end" << std::endl;
-  }
-
   // Initialize EventProcessor
   std::vector<std::string> esmodules;
   edm::Alternatives alternatives;
-  if (not empty) {
-    // host-only ESModules
-    esmodules = {"CLUEAlpakaClusterizerESProducer"};
-    for (auto const& [backend, weight] : backends) {
-      std::string prefix = "alpaka_" + name(backend) + "::";
-      // "portable" EDModules
-      std::vector<std::string> edmodules;
-      edmodules.emplace_back(prefix + "CLUEAlpakaClusterizer");
-      if (transfer) {
-        esmodules.emplace_back("CLUEOutputESProducer");
-        edmodules.emplace_back(prefix + "CLUEOutputProducer");
+  if (dim == 2) {
+    Parameters par;
+    std::ifstream iFile(configFile);
+    std::string value = "";
+    while (getline(iFile, value, ',')) {
+      par.dc = std::stof(value);
+      getline(iFile, value, ',');
+      par.rhoc = std::stof(value);
+      getline(iFile, value, ',');
+      par.outlierDeltaFactor = std::stof(value);
+      getline(iFile, value);
+      par.produceOutput = static_cast<bool>(std::stoi(value));
+    }
+    iFile.close();
+
+    std::cerr << "Running CLUE algorithm with the following parameters: \n";
+    std::cerr << "dc = " << par.dc << '\n';
+    std::cerr << "rhoc = " << par.rhoc << '\n';
+    std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+
+    if (par.produceOutput) {
+      transfer = true;
+      std::cerr << "Producing output at the end" << std::endl;
+    }
+
+    if (not empty) {
+      // host-only ESModules
+      esmodules = {"CLUEAlpakaClusterizerESProducer"};
+      for (auto const& [backend, weight] : backends) {
+        std::string prefix = "alpaka_" + name(backend) + "::";
+        // "portable" EDModules
+        std::vector<std::string> edmodules;
+        edmodules.emplace_back(prefix + "CLUEAlpakaClusterizer");
+        if (transfer) {
+          esmodules.emplace_back("CLUEOutputESProducer");
+          edmodules.emplace_back(prefix + "CLUEOutputProducer");
+        }
+        if (validation) {
+          esmodules.emplace_back("CLUEValidatorESProducer");
+          edmodules.emplace_back(prefix + "CLUEValidator");
+        }
+        alternatives.emplace_back(backend, weight, std::move(edmodules));
       }
-      if (validation) {
-        esmodules.emplace_back("CLUEValidatorESProducer");
-        edmodules.emplace_back(prefix + "CLUEValidator");
+    }
+  } else {
+    std::cerr << "Running CLUE 3D algorithm with default parameters\n";
+    if (not empty) {
+      for (auto const& [backend, weight] : backends) {
+        std::string prefix = "alpaka_" + name(backend) + "::";
+        // "portable" EDModules
+        std::vector<std::string> edmodules;
+        edmodules.emplace_back(prefix + "CLUEAlpakaTracksterizer");
+        if (validation) {
+          std::cerr << "Validation not available for CLUE 3D" << std::endl;
+        }
+        alternatives.emplace_back(backend, weight, std::move(edmodules));
       }
-      alternatives.emplace_back(backend, weight, std::move(edmodules));
     }
   }
-  edm::EventProcessor processor(maxEvents,
+
+  edm::EventProcessor processor(dim,
+                                maxEvents,
                                 runForMinutes,
                                 numberOfStreams,
                                 std::move(alternatives),

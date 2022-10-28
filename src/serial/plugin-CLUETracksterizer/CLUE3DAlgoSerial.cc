@@ -5,10 +5,6 @@
 #include "CLUE3DAlgoKernels.h"
 
 void CLUE3DAlgoSerial::setup(ClusterCollection const &pc) {
-  // this function should fill the ClusterCollection starting from PointsCloudSerial which has all the cluster indices
-  // it should calculate the position of each cluster and the energy, and (??) store the number of hits.
-  // Maybe we'll need also vector of rechit indices for each cluster
-
   // copy input variables
   d_clusters.clear();
   d_clusters.resize(ticl::TileConstants::nLayers);
@@ -47,7 +43,7 @@ void CLUE3DAlgoSerial::makeTracksters(ClusterCollection const &pc) {
   setup(pc);
 
   // calculate rho, delta and find seeds
-  if (1) {
+  if (0) {
     KernelComputeHistogram(*hist_, d_clusters);
     KernelCalculateDensity(*hist_, d_clusters);
     KernelComputeDistanceToHigher(*hist_, d_clusters);

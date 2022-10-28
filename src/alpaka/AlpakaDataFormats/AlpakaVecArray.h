@@ -50,7 +50,7 @@ namespace cms::alpakatools {
         return previousSize;
       } else {
         atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
-        assert(("Too few elemets reserved", maxSize));
+        assert(("Too few elemets reserved"));
         return -1;
       }
     }

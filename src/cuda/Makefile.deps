@@ -1,0 +1,5 @@
+cuda_EXTERNAL_DEPENDS := TBB CUDA BOOST BACKTRACE
+CUDACore_DEPENDS := Framework
+CLUEClusterizer_DEPENDS := Framework DataFormats CUDACore CUDADataFormats
+CLUEOutputProducer_DEPENDS := Framework DataFormats CUDACore CUDADataFormats
+CLUEValidator_DEPENDS := Framework DataFormats CUDACore CUDADataFormats

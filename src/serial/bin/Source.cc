@@ -57,7 +57,6 @@ namespace {
       data.energy.emplace_back(raw.energy);
       data.isSilicon.emplace_back(raw.isSilicon);
     }
-
     return data;
   }
 
@@ -145,14 +144,6 @@ namespace edm {
     if (runForMinutes_ < 0 and maxEvents_ < 0) {
       maxEvents_ = clusters_.size();
     }
-    // if (validation_) {
-    //   for (unsigned int i = 0; i != cloud_.size(); ++i) {
-    //     assert(cloud_[i].n == cloud_[i].x.size());
-    //     assert(cloud_[i].x.size() == cloud_[i].y.size());
-    //     assert(cloud_[i].y.size() == cloud_[i].layer.size());
-    //     assert(cloud_[i].layer.size() == cloud_[i].weight.size());
-    //   }
-    // }
   }
 
   void Source::startProcessing() {

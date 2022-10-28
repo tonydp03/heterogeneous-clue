@@ -17,18 +17,21 @@ private:
 
   edm::EDGetTokenT<PointsCloud> pointsCloudToken_;
   edm::EDPutTokenT<PointsCloudSerial> clusterToken_;
+
+  std::unique_ptr<CLUEAlgoSerial> algo_;
 };
 
 CLUESerialClusterizer::CLUESerialClusterizer(edm::ProductRegistry& reg)
-    : pointsCloudToken_{reg.consumes<PointsCloud>()}, clusterToken_{reg.produces<PointsCloudSerial>()} {}
+    : pointsCloudToken_{reg.consumes<PointsCloud>()},
+      clusterToken_{reg.produces<PointsCloudSerial>()},
+      algo_{std::make_unique<CLUEAlgoSerial>()} {}
 
 void CLUESerialClusterizer::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
   auto const& pc = event.get(pointsCloudToken_);
   Parameters const& par = eventSetup.get<Parameters>();
-  CLUEAlgoSerial clueAlgo(par.dc, par.rhoc, par.outlierDeltaFactor, pc.n);
-  clueAlgo.makeClusters(pc);
+  algo_->makeClusters(pc, par.dc, par.rhoc, par.outlierDeltaFactor);
 
-  event.emplace(clusterToken_, std::move(clueAlgo.d_points));
+  event.emplace(clusterToken_, std::move(algo_->d_points));
 }
 
 DEFINE_FWK_MODULE(CLUESerialClusterizer);

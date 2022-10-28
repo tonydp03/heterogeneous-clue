@@ -9,7 +9,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   constexpr int reserve = 1000000;
 
-  void CLUEAlgoAlpaka::init_device(Queue &queue_) {
+  void CLUEAlgoAlpaka::init_device(Queue queue_) {
     d_hist = cms::alpakatools::make_device_buffer<LayerTilesAlpaka[]>(queue_, NLAYERS);
     d_seeds = cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, maxNSeeds>>(queue_);
     d_followers =
@@ -19,7 +19,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     followers_ = (*d_followers).data();
   }
 
-  void CLUEAlgoAlpaka::setup(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue &queue_) {
+  void CLUEAlgoAlpaka::setup(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue queue_) {
     // copy input variables
     alpaka::memcpy(queue_, d_points.x, cms::alpakatools::make_host_view(host_pc.x.data(), host_pc.x.size()));
     alpaka::memcpy(queue_, d_points.y, cms::alpakatools::make_host_view(host_pc.y.data(), host_pc.x.size()));
@@ -44,7 +44,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetHist(), hist_));
   }
 
-  void CLUEAlgoAlpaka::makeClusters(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue &queue_) {
+  void CLUEAlgoAlpaka::makeClusters(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue queue_) {
     setup(host_pc, d_points, queue_);
     // calculate rho, delta and find seeds
     // 1 point per thread

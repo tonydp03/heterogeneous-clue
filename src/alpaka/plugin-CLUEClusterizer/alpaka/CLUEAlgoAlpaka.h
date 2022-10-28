@@ -14,7 +14,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     // constructor
     CLUEAlgoAlpaka() = delete;
-    explicit CLUEAlgoAlpaka(float const &dc, float const &rhoc, float const &outlierDeltaFactor, Queue &stream)
+    explicit CLUEAlgoAlpaka(float const &dc, float const &rhoc, float const &outlierDeltaFactor, Queue stream)
         // : queue_{std::move(stream)}, dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
         : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
       init_device(stream);
@@ -22,7 +22,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     ~CLUEAlgoAlpaka() = default;
 
-    void makeClusters(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue &stream);
+    void makeClusters(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue stream);
 
     LayerTilesAlpaka *hist_;
     cms::alpakatools::VecArray<int, maxNSeeds> *seeds_;
@@ -39,9 +39,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::optional<cms::alpakatools::device_buffer<Device, cms::alpakatools::VecArray<int, maxNFollowers>[]>> d_followers;
 
     // private methods
-    void init_device(Queue &stream);
+    void init_device(Queue stream);
 
-    void setup(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue &stream);
+    void setup(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue stream);
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

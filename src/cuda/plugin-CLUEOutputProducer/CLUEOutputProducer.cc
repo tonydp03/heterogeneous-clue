@@ -41,7 +41,6 @@ void CLUEOutputProducer::produce(edm::Event& event, edm::EventSetup const& event
   auto const& device_clusters = ctx.get(pcProduct);
   auto stream = ctx.stream();
 
-  // cms::cuda::host::unique_ptr<PointsCloud> m_soa;
   results.outResize();
   cudaCheck(cudaMemcpyAsync(
       results.rho.data(), device_clusters.rho.get(), sizeof(float) * results.x.size(), cudaMemcpyDeviceToHost, stream));

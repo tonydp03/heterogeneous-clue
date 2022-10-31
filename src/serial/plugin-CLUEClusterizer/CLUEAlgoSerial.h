@@ -10,14 +10,12 @@ public:
   CLUEAlgoSerial() { hist_ = new std::array<LayerTilesSerial, NLAYERS>; };
   ~CLUEAlgoSerial() { delete hist_; };
 
-  void makeClusters(PointsCloud const &host_pc, float const &dc, float const &rhoc, float const &outlierDeltaFactor);
-
-  PointsCloudSerial d_points;
+  void makeClusters(PointsCloud const &host_pc, PointsCloudSerial &d_points, float const &dc, float const &rhoc, float const &outlierDeltaFactor);
 
   std::array<LayerTilesSerial, NLAYERS> *hist_;
 
 private:
-  void setup(PointsCloud const &host_pc);
+  void setup(PointsCloud const &host_pc, PointsCloudSerial &d_points);
 };
 
 #endif

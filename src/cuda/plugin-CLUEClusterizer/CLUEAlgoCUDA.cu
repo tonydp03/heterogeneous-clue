@@ -14,17 +14,19 @@
 #include "CLUEAlgoKernels.h"
 #include "CUDACore/cudaCheck.h"
 
-void CLUEAlgoCUDA::init_device(int nPoints) {
+constexpr int reserve = 1000000;
+
+void CLUEAlgoCUDA::init_device(cudaStream_t stream_) {
   d_hist = cms::cuda::make_device_unique<LayerTilesCUDA[]>(NLAYERS, stream_);
   d_seeds = cms::cuda::make_device_unique<cms::cuda::VecArray<int, maxNSeeds>>(stream_);
-  d_followers = cms::cuda::make_device_unique<cms::cuda::VecArray<int, maxNFollowers>[]>(nPoints, stream_);
+  d_followers = cms::cuda::make_device_unique<cms::cuda::VecArray<int, maxNFollowers>[]>(reserve, stream_);
 
   hist_ = d_hist.get();
   seeds_ = d_seeds.get();
   followers_ = d_followers.get();
 }
 
-void CLUEAlgoCUDA::setup(PointsCloud const& host_pc) {
+void CLUEAlgoCUDA::setup(PointsCloud const& host_pc, PointsCloudCUDA& d_points, cudaStream_t stream_) {
   // copy input variables
   cudaCheck(cudaMemcpyAsync(
       d_points.x.get(), host_pc.x.data(), sizeof(float) * host_pc.x.size(), cudaMemcpyHostToDevice, stream_));
@@ -54,8 +56,8 @@ void CLUEAlgoCUDA::setup(PointsCloud const& host_pc) {
   kernel_reset_hist<<<gridSize, blockSize, 0, stream_>>>(hist_);
 }
 
-void CLUEAlgoCUDA::makeClusters(PointsCloud const& host_pc) {
-  setup(host_pc);
+void CLUEAlgoCUDA::makeClusters(PointsCloud const& host_pc, PointsCloudCUDA& d_points, cudaStream_t stream_) {
+  setup(host_pc, d_points, stream_);
   ////////////////////////////////////////////
   // calculate rho, delta and find seeds
   // 1 point per thread

@@ -6,7 +6,8 @@
 struct PointsCloud {
   PointsCloud() = default;
 
-  void outResize(unsigned int const& nPoints) {
+  void outResize() {
+    auto nPoints = x.size();
     rho.resize(nPoints);
     delta.resize(nPoints);
     nearestHigher.resize(nPoints);

@@ -16,19 +16,12 @@ struct ClusterCollection {
   std::vector<int> layer;
   std::vector<float> energy;
   std::vector<int> isSilicon;
-
 };
 
 struct ClusterCollectionSerial {
   ClusterCollectionSerial() = default;
 
   void outResize() {
-    rho.clear();
-    delta.clear();
-    nearestHigher.clear();
-    tracksterIndex.clear();
-    followers.clear();
-    isSeed.clear();
     auto nClusters = x.size();
     rho.resize(nClusters);
     delta.resize(nClusters);
@@ -55,7 +48,6 @@ struct ClusterCollectionSerial {
   std::vector<std::vector<std::pair<int, int>>> followers;
   std::vector<int> isSeed;
   std::vector<int> tracksterIndex;
-
 };
 
 using ClusterCollectionSerialOnLayers = std::vector<ClusterCollectionSerial>;

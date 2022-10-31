@@ -16,7 +16,7 @@ inline float distance(PointsCloudSerial &points, int i, int j) {
 }
 
 void kernel_compute_histogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points) {
-  for (unsigned int i = 0; i < points.n; i++) {
+  for (unsigned int i = 0; i < points.x.size(); i++) {
     // push index of points into tiles
     d_hist[points.layer[i]].fill(points.x[i], points.y[i], i);
   }
@@ -24,7 +24,7 @@ void kernel_compute_histogram(std::array<LayerTilesSerial, NLAYERS> &d_hist, Poi
 
 void kernel_calculate_density(std::array<LayerTilesSerial, NLAYERS> &d_hist, PointsCloudSerial &points, float dc) {
   // loop over all points
-  for (unsigned int i = 0; i < points.n; i++) {
+  for (unsigned int i = 0; i < points.x.size(); i++) {
     LayerTilesSerial &lt = d_hist[points.layer[i]];
 
     // get search box
@@ -60,7 +60,7 @@ void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_
                                        float dc) {
   // loop over all points
   float dm = outlierDeltaFactor * dc;
-  for (unsigned int i = 0; i < points.n; i++) {
+  for (unsigned int i = 0; i < points.x.size(); i++) {
     // default values of delta and nearest higher for i
     float delta_i = std::numeric_limits<float>::max();
     int nearestHigher_i = -1;
@@ -86,7 +86,7 @@ void kernel_calculate_distanceToHigher(std::array<LayerTilesSerial, NLAYERS> &d_
           // query N'_{dm}(i)
           bool foundHigher = (points.rho[j] > rho_i);
           // in the rare case where rho is the same, use detid
-          // foundHigher = foundHigher || ((points.rho[j] == rho_i) && (j > i));
+          foundHigher = foundHigher || ((points.rho[j] == rho_i) && (j > i));
           float dist_ij = distance(points, i, j);
           if (foundHigher && dist_ij <= dm) {  // definition of N'_{dm}(i)
             // find the nearest point within N'_{dm}(i)
@@ -111,7 +111,7 @@ void kernel_findAndAssign_clusters(PointsCloudSerial &points, float outlierDelta
   // find cluster seeds and outlier
   std::vector<int> localStack;
   // loop over all points
-  for (unsigned int i = 0; i < points.n; i++) {
+  for (unsigned int i = 0; i < points.x.size(); i++) {
     // initialize clusterIndex
     points.clusterIndex[i] = -1;
 

@@ -33,15 +33,11 @@ void CLUECUDAClusterizer::produce(edm::Event& event, const edm::EventSetup& even
   cms::cuda::ScopedContextProduce ctx(event.streamID());
   Parameters const& par = eventSetup.get<Parameters>();
   auto stream = ctx.stream();
-  // CLUEAlgoCUDA clueAlgo(pc.x.size(), par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-  // clueAlgo.makeClusters(pc);
-
-  // ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
-  if (!clueAlgo) {
-    constexpr int reserve = 1000000;
-    clueAlgo = std::make_unique<CLUEAlgoCUDA>(reserve, par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-  }
-  clueAlgo->makeClusters(pc);
+  PointsCloudCUDA d_points(stream, pc.x.size());
+  if (!clueAlgo)
+    clueAlgo = std::make_unique<CLUEAlgoCUDA>(par.dc, par.rhoc, par.outlierDeltaFactor, stream);
+  clueAlgo->makeClusters(pc, d_points, stream);
+  ctx.emplace(event, clusterToken_, std::move(d_points));
 }
 
 DEFINE_FWK_MODULE(CLUECUDAClusterizer);

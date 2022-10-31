@@ -270,8 +270,6 @@ int main(int argc, char** argv) {
       transfer = true;
       std::cerr << "Producing output at the end" << std::endl;
     }
-    // if (validation || transfer)
-    //   par.putOutputInEvent = true;
 
     if (not empty) {
       // host-only ESModules

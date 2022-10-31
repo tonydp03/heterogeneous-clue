@@ -15,7 +15,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // constructor
     CLUEAlgoAlpaka() = delete;
     explicit CLUEAlgoAlpaka(float const &dc, float const &rhoc, float const &outlierDeltaFactor, Queue stream)
-        // : queue_{std::move(stream)}, dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
         : dc_{dc}, rhoc_{rhoc}, outlierDeltaFactor_{outlierDeltaFactor} {
       init_device(stream);
     }
@@ -29,7 +28,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     cms::alpakatools::VecArray<int, maxNFollowers> *followers_;
 
   private:
-    // Queue queue_;
     float dc_;
     float rhoc_;
     float outlierDeltaFactor_;

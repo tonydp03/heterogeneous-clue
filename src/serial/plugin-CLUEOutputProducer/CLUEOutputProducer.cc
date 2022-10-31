@@ -36,7 +36,7 @@ void CLUEOutputProducer::produce(edm::Event& event, edm::EventSetup const& event
     std::ofstream clueOut(outFile);
 
     clueOut << "index,x,y,layer,weight,rho,delta,nh,isSeed,clusterId\n";
-    for (unsigned int i = 0; i < results.n; i++) {
+    for (unsigned int i = 0; i < results.x.size(); i++) {
       clueOut << i << "," << results.x[i] << "," << results.y[i] << "," << results.layer[i] << "," << results.weight[i]
               << "," << results.rho[i] << "," << (results.delta[i] > 999 ? 999 : results.delta[i]) << ","
               << results.nearestHigher[i] << "," << results.isSeed[i] << "," << results.clusterIndex[i] << "\n";

@@ -29,9 +29,10 @@ CLUESerialClusterizer::CLUESerialClusterizer(edm::ProductRegistry& reg)
 void CLUESerialClusterizer::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
   auto const& pc = event.get(pointsCloudToken_);
   Parameters const& par = eventSetup.get<Parameters>();
-  algo_->makeClusters(pc, par.dc, par.rhoc, par.outlierDeltaFactor);
+  PointsCloudSerial d_points;
+  algo_->makeClusters(pc, d_points, par.dc, par.rhoc, par.outlierDeltaFactor);
 
-  event.emplace(clusterToken_, std::move(algo_->d_points));
+  event.emplace(clusterToken_, std::move(d_points));
 }
 
 DEFINE_FWK_MODULE(CLUESerialClusterizer);

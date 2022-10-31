@@ -33,14 +33,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto const& pc = event.get(clusterCollectionToken_);
     cms::alpakatools::ScopedContextProduce<Queue> ctx(event.streamID());
     auto stream = ctx.stream();
-    // CLUE3DAlgoAlpaka algo_(stream);
-    // algo_.makeTracksters(pc);
-    // ctx.emplace(event, tracksterToken_, std::move(algo_.d_clusters));
-    if (!algo_) {
-      constexpr int reserve = 100000;
-      algo_ = std::make_unique<CLUE3DAlgoAlpaka>(reserve, stream);
-    }
-    algo_->makeTracksters(pc);
+    ClusterCollectionAlpaka d_clusters(stream, pc.x.size());
+    if (!algo_)
+      algo_ = std::make_unique<CLUE3DAlgoAlpaka>(stream);
+    algo_->makeTracksters(pc, d_clusters, stream);
+    ctx.emplace(event, tracksterToken_, std::move(d_clusters));
   }
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

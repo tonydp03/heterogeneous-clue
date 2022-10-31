@@ -13,31 +13,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     // constructor
     CLUE3DAlgoAlpaka() = delete;
-    explicit CLUE3DAlgoAlpaka(int nPoints, Queue stream) : d_clusters{stream, nPoints}, queue_{std::move(stream)} {
-      init_device(nPoints);
-    }
+    explicit CLUE3DAlgoAlpaka(Queue stream) { init_device(stream); }
 
     ~CLUE3DAlgoAlpaka() = default;
 
-    void makeTracksters(ClusterCollection const &host_pc);
-
-    ClusterCollectionAlpaka d_clusters;
+    void makeTracksters(ClusterCollection const &host_pc, ClusterCollectionAlpaka &d_clusters, Queue stream);
 
     TICLLayerTilesAlpaka *hist_;
     cms::alpakatools::VecArray<int, ticl::maxNSeeds> *seeds_;
     cms::alpakatools::VecArray<int, ticl::maxNFollowers> *followers_;
 
   private:
-    Queue queue_;
-
     std::optional<cms::alpakatools::device_buffer<Device, TICLLayerTilesAlpaka[]>> d_hist;
     std::optional<cms::alpakatools::device_buffer<Device, cms::alpakatools::VecArray<int, ticl::maxNSeeds>>> d_seeds;
     std::optional<cms::alpakatools::device_buffer<Device, cms::alpakatools::VecArray<int, ticl::maxNFollowers>[]>>
         d_followers;
 
-    void init_device(int nPoints);
+    void init_device(Queue stream);
 
-    void setup(ClusterCollection const &host_pc);
+    void setup(ClusterCollection const &host_pc, ClusterCollectionAlpaka &d_clusters, Queue stream);
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 

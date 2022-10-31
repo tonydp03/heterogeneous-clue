@@ -1,4 +1,4 @@
-# Heterogeneous-CLUE: SYCL implementation
+# Heterogeneous-CLUE
 
 ## Table of contents
 
@@ -17,6 +17,8 @@
 ## Introduction
 The purpose of this package is to explore various implementations of the [CLUE](https://gitlab.cern.ch/kalos/clue) clustering algorithm, and their performance, within the same framework as [Patatrack](https://patatrack.web.cern.ch/patatrack/wiki/) pixel
 tracking application ([Pixeltrack](https://github.com/cms-patatrack/pixeltrack-standalone)). The full description of the CLUE procedure can be found [here](https://www.frontiersin.org/articles/10.3389/fdata.2020.591315/full).
+An implementation of the 3D version (as integrated in CMSSW, cpu-only) is also available for `serial` and `alpaka`.
+In this document, the 2D version of the algorithm will be simply referred as CLUE, while the 3D version as CLUE3D.
 
 The application is designed to require minimal dependencies on the system. All programs require:
 * GNU Make, `curl`, `md5sum`, `tar`
@@ -72,7 +74,7 @@ source env.sh
 ```
 This will produce an executable tailored for any NVIDIA GPU. Note that the environment is different, so the build might clash if executed in the same folder in `afs`. 
 
-## Runtime parameters
+## CLUE parameters
 CLUE needs three parameters to run: `dc`, `rhoc` and `outlierDeltaFactor`. 
 
 - _dc_ is the critical distance used to compute the local density;
@@ -108,6 +110,8 @@ Options
 ```
 
 NOTE: some backends might have less options or more (i.e. `serial` and `cuda` do not have a `--device` option, but `alpaka` has a `--backend` option that can take several arguments and respective weights to split the job among them as desired). Please have a look at the `main` file of the application found in the `bin` folder for each backend.
+
+For `serial` and `alpaka` only, an additional option is required: `--dim 2` must be used to run the CLUE algorithm, while `--dim 3` must be selected for CLUE3D. `--dim` is not required for the other backends. 
 
 ### SYCL device selection
 The option to select the device is quite flexible. In the SYCL implementation, ```--device``` can accept either a class of devices (cpu, gpu or acc) or a specific device. If one class is selected and the program is executed with more than one stream, the load will be automatically divided among all the available devices at runtime. 

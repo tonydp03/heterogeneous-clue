@@ -29,7 +29,6 @@ namespace {
 
   PointsCloud readRaw2D(std::ifstream &inputFile, uint32_t n_points) {
     PointsCloud data;
-    data.n = n_points;
     Point raw;
     for (unsigned int ipoint = 0; ipoint < n_points; ++ipoint) {
       inputFile.read(reinterpret_cast<char *>(&raw), sizeof(Point));
@@ -77,7 +76,6 @@ namespace {
       }
       in.close();
     }
-    data.n = data.x.size();
     return data;
   }
 }  // namespace
@@ -116,7 +114,6 @@ namespace edm {
     }
     if (validation_) {
       for (unsigned int i = 0; i != cloud_.size(); ++i) {
-        assert(cloud_[i].n == cloud_[i].x.size());
         assert(cloud_[i].x.size() == cloud_[i].y.size());
         assert(cloud_[i].y.size() == cloud_[i].layer.size());
         assert(cloud_[i].layer.size() == cloud_[i].weight.size());

@@ -17,16 +17,15 @@ public:
     delete histSoA_;
   };
 
-  void makeTracksters(ClusterCollection const &host_pc);
-
-  ClusterCollectionSerialOnLayers d_clusters;
-  ClusterCollectionSerial d_clustersSoA;
+  void makeTrackstersSoA(ClusterCollection const &host_pc, ClusterCollectionSerial &d_clustersSoA);
+  void makeTracksters(ClusterCollection const &host_pc, ClusterCollectionSerialOnLayers &d_clusters);
 
   TICLLayerTiles *hist_;
   TICLLayerTiles *histSoA_;
 
 private:
-  void setup(ClusterCollection const &pc);
+  void setupSoA(ClusterCollection const &pc, ClusterCollectionSerial &d_clustersSoA);
+  void setup(ClusterCollection const &pc, ClusterCollectionSerialOnLayers &d_clusters);
 };
 
 #endif

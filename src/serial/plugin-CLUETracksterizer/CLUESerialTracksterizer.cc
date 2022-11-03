@@ -29,9 +29,15 @@ CLUESerialTracksterizer::CLUESerialTracksterizer(edm::ProductRegistry& reg)
 void CLUESerialTracksterizer::produce(edm::Event& event, const edm::EventSetup& eventSetup) {
   auto const& pc = event.get(clusterCollectionToken_);
 
-  algo_->makeTracksters(pc);
-
-  event.emplace(tracksterToken_, std::move(algo_->d_clusters));
+  if (0) {
+    ClusterCollectionSerialOnLayers d_clusters;
+    algo_->makeTracksters(pc, d_clusters);
+    event.emplace(tracksterToken_, std::move(d_clusters));
+  } else {
+    ClusterCollectionSerial d_clustersSoA;
+    algo_->makeTrackstersSoA(pc, d_clustersSoA);
+    event.emplace(tracksterToken_, std::move(d_clustersSoA));
+  }
 }
 
 DEFINE_FWK_MODULE(CLUESerialTracksterizer);

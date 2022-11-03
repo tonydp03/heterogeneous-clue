@@ -21,6 +21,7 @@ private:
 
   edm::EDGetTokenT<PointsCloud> pointsCloudToken_;
   edm::EDPutTokenT<cms::cuda::Product<PointsCloudCUDA>> clusterToken_;
+  std::unique_ptr<CLUEAlgoCUDA> clueAlgo;
 };
 
 CLUECUDAClusterizer::CLUECUDAClusterizer(edm::ProductRegistry& reg)
@@ -32,10 +33,11 @@ void CLUECUDAClusterizer::produce(edm::Event& event, const edm::EventSetup& even
   cms::cuda::ScopedContextProduce ctx(event.streamID());
   Parameters const& par = eventSetup.get<Parameters>();
   auto stream = ctx.stream();
-  CLUEAlgoCUDA clueAlgo(par.dc, par.rhoc, par.outlierDeltaFactor, stream);
-  clueAlgo.makeClusters(pc);
-
-  ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
+  PointsCloudCUDA d_points(stream, pc.x.size());
+  if (!clueAlgo)
+    clueAlgo = std::make_unique<CLUEAlgoCUDA>(par.dc, par.rhoc, par.outlierDeltaFactor, stream);
+  clueAlgo->makeClusters(pc, d_points, stream);
+  ctx.emplace(event, clusterToken_, std::move(d_points));
 }
 
 DEFINE_FWK_MODULE(CLUECUDAClusterizer);

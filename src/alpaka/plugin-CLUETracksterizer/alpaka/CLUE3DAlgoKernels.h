@@ -14,6 +14,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using pointsView = ClusterCollectionAlpaka::ClusterCollectionAlpakaView;
 
+  struct KernelResetHist {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc, TICLLayerTilesAlpaka *d_hist) const {
+      cms::alpakatools::for_each_element_in_grid(acc, ticl::TileConstants::nBins, [&](uint32_t i) {
+        for (int layerId = 0; layerId < ticl::TileConstants::nLayers; ++layerId)
+          d_hist[layerId].clear(i);
+      });
+    }
+  };
+
+  struct KernelResetFollowers {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc,
+                                  cms::alpakatools::VecArray<int, ticl::maxNFollowers> *d_followers,
+                                  uint32_t const &numberOfPoints) const {
+      cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) { d_followers[i].reset(); });
+    }
+  };
+
   struct KernelComputeHistogram {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc,
@@ -44,6 +63,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t clusterIdx) {
         int layerId = d_points->layer[clusterIdx];
+        float rhoi{0.f};
 
         auto isReachable = [](float r0, float r1, float phi0, float phi1, float delta_sqr) -> bool {
           // TODO(rovere): import reco::deltaPhi implementation as well
@@ -104,12 +124,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                       ((clusterIdx == otherClusterIdx) ? 1.f
                                                        : kernelDensityFactor * factor_same_layer_different_cluster) *
                       d_points->energy[otherClusterIdx];
-                  d_points->rho[clusterIdx] += energyToAdd;
+                  rhoi += energyToAdd;
                 }
               }  // end of loop on possible compatible clusters
             }    // end of loop over phi-bin region
           }      // end of loop over eta-bin region
         }        // end of loop on the sibling layers
+        d_points->rho[clusterIdx] = rhoi;
       });
     }
   };
@@ -249,6 +270,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
             if (soaIdx >= 0)
               d_followers[soaIdx].push_back(acc, clusterIdx);
           }
+          d_points->isSeed[clusterIdx] = 0;
         }
       });
     }
@@ -270,28 +292,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         int idxThisSeed = seeds[idxCls];
         d_points->tracksterIndex[idxThisSeed] = idxCls;
         // push_back idThisSeed to localStack
-        assert((localStackSize < ticl::localStackSizePerSeed));
+        // assert((localStackSize < ticl::localStackSizePerSeed));
 
         localStack[localStackSize] = idxThisSeed;
         localStackSize++;
         // process all elements in localStack
         while (localStackSize > 0) {
           // get last element of localStack
-          assert((localStackSize - 1 < ticl::localStackSizePerSeed));
+          // assert((localStackSize - 1 < ticl::localStackSizePerSeed));
           int idxEndOfLocalStack = localStack[localStackSize - 1];
           int temp_tracksterIndex = d_points->tracksterIndex[idxEndOfLocalStack];
           // pop_back last element of localStack
-          assert((localStackSize - 1 < ticl::localStackSizePerSeed));
+          // assert((localStackSize - 1 < ticl::localStackSizePerSeed));
           localStack[localStackSize - 1] = -1;
           localStackSize--;
-
+          const auto &followers = d_followers[idxEndOfLocalStack];
+          const auto followers_size = d_followers[idxEndOfLocalStack].size();
           // loop over followers of last element of localStack
-          for (int j : d_followers[idxEndOfLocalStack]) {
+          for (int j = 0; j < followers_size; ++j) {
             // pass id to follower
+            int follower = followers[j];
             d_points->tracksterIndex[j] = temp_tracksterIndex;
             // push_back follower to localStack
-            assert((localStackSize < ticl::localStackSizePerSeed));
-            localStack[localStackSize] = j;
+            // assert((localStackSize < ticl::localStackSizePerSeed));
+            localStack[localStackSize] = follower;
             localStackSize++;
           }
         }

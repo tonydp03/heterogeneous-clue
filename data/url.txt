@@ -1,1 +1,1 @@
-https://cernbox.cern.ch/index.php/s/9vsO8zUzFDdZ2nA/download
+https://cernbox.cern.ch/remote.php/dav/public-files/rZktWsfXTbMUxnX/clue_data.tar.gz

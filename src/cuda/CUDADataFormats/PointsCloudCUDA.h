@@ -7,23 +7,21 @@
 #include "CUDACore/device_unique_ptr.h"
 #include "DataFormats/PointsCloud.h"
 
-constexpr unsigned int reserve = 1000000;
-
 class PointsCloudCUDA {
 public:
   PointsCloudCUDA() = delete;
-  explicit PointsCloudCUDA(cudaStream_t stream)
+  explicit PointsCloudCUDA(cudaStream_t stream, int nPoints)
       // input variables
-      : x{cms::cuda::make_device_unique<float[]>(reserve, stream)},
-        y{cms::cuda::make_device_unique<float[]>(reserve, stream)},
-        layer{cms::cuda::make_device_unique<int[]>(reserve, stream)},
-        weight{cms::cuda::make_device_unique<float[]>(reserve, stream)},
+      : x{cms::cuda::make_device_unique<float[]>(nPoints, stream)},
+        y{cms::cuda::make_device_unique<float[]>(nPoints, stream)},
+        layer{cms::cuda::make_device_unique<int[]>(nPoints, stream)},
+        weight{cms::cuda::make_device_unique<float[]>(nPoints, stream)},
         // result variables
-        rho{cms::cuda::make_device_unique<float[]>(reserve, stream)},
-        delta{cms::cuda::make_device_unique<float[]>(reserve, stream)},
-        nearestHigher{cms::cuda::make_device_unique<int[]>(reserve, stream)},
-        clusterIndex{cms::cuda::make_device_unique<int[]>(reserve, stream)},
-        isSeed{cms::cuda::make_device_unique<int[]>(reserve, stream)},
+        rho{cms::cuda::make_device_unique<float[]>(nPoints, stream)},
+        delta{cms::cuda::make_device_unique<float[]>(nPoints, stream)},
+        nearestHigher{cms::cuda::make_device_unique<int[]>(nPoints, stream)},
+        clusterIndex{cms::cuda::make_device_unique<int[]>(nPoints, stream)},
+        isSeed{cms::cuda::make_device_unique<int[]>(nPoints, stream)},
         view_d{cms::cuda::make_device_unique<PointsCloudCUDAView>(stream)} {
     auto view_h = cms::cuda::make_host_unique<PointsCloudCUDAView>(stream);
     view_h->x = x.get();
@@ -37,7 +35,6 @@ public:
     view_h->isSeed = isSeed.get();
 
     cudaMemcpyAsync(view_d.get(), view_h.get(), sizeof(PointsCloudCUDAView), cudaMemcpyHostToDevice, stream);
-    cudaStreamSynchronize(stream);
   }
   PointsCloudCUDA(PointsCloudCUDA const &) = delete;
   PointsCloudCUDA(PointsCloudCUDA &&) = default;

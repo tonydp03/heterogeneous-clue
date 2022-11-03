@@ -8,18 +8,19 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  void CLUE3DAlgoAlpaka::init_device() {
+  constexpr int reserve = 100000;
+
+  void CLUE3DAlgoAlpaka::init_device(Queue queue_) {
     d_hist = cms::alpakatools::make_device_buffer<TICLLayerTilesAlpaka[]>(queue_, ticl::TileConstants::nLayers);
     d_seeds = cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, ticl::maxNSeeds>>(queue_);
     d_followers =
         cms::alpakatools::make_device_buffer<cms::alpakatools::VecArray<int, ticl::maxNFollowers>[]>(queue_, reserve);
-
     hist_ = (*d_hist).data();
     seeds_ = (*d_seeds).data();
     followers_ = (*d_followers).data();
   }
 
-  void CLUE3DAlgoAlpaka::setup(ClusterCollection const &host_pc) {
+  void CLUE3DAlgoAlpaka::setup(ClusterCollection const &host_pc, ClusterCollectionAlpaka &d_clusters, Queue queue_) {
     // copy input variables
     alpaka::memcpy(queue_, d_clusters.x, cms::alpakatools::make_host_view(host_pc.x.data(), host_pc.x.size()));
     alpaka::memcpy(queue_, d_clusters.y, cms::alpakatools::make_host_view(host_pc.y.data(), host_pc.x.size()));
@@ -36,20 +37,30 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memcpy(
         queue_, d_clusters.isSilicon, cms::alpakatools::make_host_view(host_pc.isSilicon.data(), host_pc.x.size()));
     // initialize result and internal variables
-    alpaka::memset(queue_, d_clusters.rho, 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    alpaka::memset(queue_, d_clusters.delta, 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    alpaka::memset(queue_, d_clusters.nearestHigher, 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    alpaka::memset(queue_, d_clusters.tracksterIndex, 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    alpaka::memset(queue_, d_clusters.isSeed, 0x00, static_cast<uint32_t>(host_pc.x.size()));
-    alpaka::memset(queue_, (*d_hist), 0x00, static_cast<uint32_t>(ticl::TileConstants::nLayers));
+    // alpaka::memset(queue_, d_clusters.rho, 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, d_clusters.delta, 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, d_clusters.nearestHigher, 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, d_clusters.tracksterIndex, 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, d_clusters.isSeed, 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, (*d_hist), 0x00, static_cast<uint32_t>(ticl::TileConstants::nLayers));
     alpaka::memset(queue_, (*d_seeds), 0x00);
-    alpaka::memset(queue_, (*d_followers), 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    // alpaka::memset(queue_, (*d_followers), 0x00, static_cast<uint32_t>(host_pc.x.size()));
+    const Idx blockSize = 1024;
+    Idx gridSize = std::ceil(host_pc.x.size() / static_cast<float>(blockSize));
+    auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
 
-    alpaka::wait(queue_);
+    alpaka::enqueue(queue_,
+                    alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetFollowers(), followers_, host_pc.x.size()));
+
+    gridSize = std::ceil(ticl::TileConstants::nBins / static_cast<float>(blockSize));
+    WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
+    alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetHist(), hist_));
   }
 
-  void CLUE3DAlgoAlpaka::makeTracksters(ClusterCollection const &host_pc) {
-    setup(host_pc);
+  void CLUE3DAlgoAlpaka::makeTracksters(ClusterCollection const &host_pc,
+                                        ClusterCollectionAlpaka &d_clusters,
+                                        Queue queue_) {
+    setup(host_pc, d_clusters, queue_);
     // calculate rho, delta and find seeds
     // 1 point per thread
     const Idx blockSize = 1024;

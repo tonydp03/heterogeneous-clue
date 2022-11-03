@@ -6,14 +6,14 @@
 struct PointsCloud {
   PointsCloud() = default;
 
-  void outResize(unsigned int const& nPoints) {
+  void outResize() {
+    auto nPoints = x.size();
     rho.resize(nPoints);
     delta.resize(nPoints);
     nearestHigher.resize(nPoints);
     clusterIndex.resize(nPoints);
     followers.resize(nPoints);
     isSeed.resize(nPoints);
-    n = nPoints;
   }
 
   std::vector<float> x;
@@ -31,8 +31,6 @@ struct PointsCloud {
   // https://en.cppreference.com/w/cpp/container/vector_bool
   // std::vector<bool> behaves similarly to std::vector, but in order to be space efficient, it:
   // Does not necessarily store its elements as a contiguous array (so &v[0] + n != &v[n])
-
-  unsigned int n;
 };
 
 #endif

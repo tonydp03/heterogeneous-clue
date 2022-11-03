@@ -1,5 +1,6 @@
 # backup files
 *~
+*swp
 # intermediate directories and build targets
 /external/
 /obj/

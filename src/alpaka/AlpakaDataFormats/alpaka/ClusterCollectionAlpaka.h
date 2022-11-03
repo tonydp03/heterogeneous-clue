@@ -7,29 +7,27 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  constexpr unsigned int reserve = 100000;
-
   class ClusterCollectionAlpaka {
   public:
     ClusterCollectionAlpaka() = delete;
-    explicit ClusterCollectionAlpaka(Queue &stream)
+    explicit ClusterCollectionAlpaka(Queue &stream, int nPoints)
         //input variables
-        : x{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          y{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          z{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          eta{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          phi{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          r_over_absz{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          radius{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          layer{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          energy{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          isSilicon{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
+        : x{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          y{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          z{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          eta{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          phi{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          r_over_absz{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          radius{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          layer{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          energy{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          isSilicon{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
           //result variables
-          rho{cms::alpakatools::make_device_buffer<float[]>(stream, reserve)},
-          delta{cms::alpakatools::make_device_buffer<std::pair<float, int>[]>(stream, reserve)},
-          nearestHigher{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          isSeed{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
-          tracksterIndex{cms::alpakatools::make_device_buffer<int[]>(stream, reserve)},
+          rho{cms::alpakatools::make_device_buffer<float[]>(stream, nPoints)},
+          delta{cms::alpakatools::make_device_buffer<std::pair<float, int>[]>(stream, nPoints)},
+          nearestHigher{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          isSeed{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
+          tracksterIndex{cms::alpakatools::make_device_buffer<int[]>(stream, nPoints)},
           view_d{cms::alpakatools::make_device_buffer<ClusterCollectionAlpakaView>(stream)} {
       auto view_h = cms::alpakatools::make_host_buffer<ClusterCollectionAlpakaView>(stream);
       view_h->x = x.data();
@@ -49,7 +47,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       view_h->tracksterIndex = tracksterIndex.data();
 
       alpaka::memcpy(stream, view_d, view_h);
-      alpaka::wait(stream);
     }
     ClusterCollectionAlpaka(ClusterCollectionAlpaka const &) = delete;
     ClusterCollectionAlpaka(ClusterCollectionAlpaka &&) = default;

@@ -62,11 +62,17 @@ public:
 
   ALPAKA_FN_HOST_ACC int globalBin(double eta, double phi) const { return phiBin(phi) + etaBin(eta) * T::nPhiBins; }
 
-  ALPAKA_FN_HOST_ACC void clear() {
-    auto nBins = T::nEtaBins * T::nPhiBins;
-    for (int j = 0; j < nBins; ++j)
-      tiles_[j].clear();
+  // ALPAKA_FN_HOST_ACC void clear() {
+  //   auto nBins = T::nEtaBins * T::nPhiBins;
+  //   for (int j = 0; j < nBins; ++j)
+  //     tiles_[j].clear();
+  // }
+  ALPAKA_FN_HOST_ACC inline constexpr void clear() {
+    for (auto& t : tiles_)
+      t.reset();
   }
+
+  ALPAKA_FN_HOST_ACC inline constexpr void clear(int i) { tiles_[i].reset(); }
 
   ALPAKA_FN_HOST_ACC const cms::alpakatools::VecArray<unsigned int, T::tileDepth>& operator[](int globalBinId) const {
     return tiles_[globalBinId];

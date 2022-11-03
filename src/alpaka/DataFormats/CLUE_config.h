@@ -21,9 +21,9 @@ std::string to_string_with_precision(const T a_value, const int n = 6) {
 }
 
 inline std::string create_outputfileName(int const& EventId,
-                                          float const& dc,
-                                          float const& rhoc,
-                                          float const& outlierDeltaFactor) {
+                                         float const& dc,
+                                         float const& rhoc,
+                                         float const& outlierDeltaFactor) {
   std::string underscore = "_";
   std::string filename = "Event";
   filename.append(underscore);

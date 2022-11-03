@@ -78,5 +78,3 @@ additional CUDA streams are used since there is sub-event concurrency
 in the DAG that we want to expose to CUDA runtime.
 
 For more information see [cms-sw/cmssw:`HeterogeneousCore/CUDACore/README.md`](https://github.com/cms-sw/cmssw/blob/CMSSW_11_1_0_pre4/HeterogeneousCore/CUDACore/README.md).
-
-## Application structure

@@ -1,4 +1,4 @@
-# Heterogeneous-CLUE: SYCL implementation
+# Heterogeneous-CLUE
 
 ## Table of contents
 
@@ -15,44 +15,71 @@
 * [Build system](#build-system)
 
 ## Introduction
-The purpose of this package is to explore various implementations of [CLUE](https://gitlab.cern.ch/kalos/clue) clustering algorithm, and their performance, when integrated in a framwork extremely similar to the one found in [Patatrack](https://patatrack.web.cern.ch/patatrack/wiki/) pixel
-tracking application ([Pixeltrack](https://github.com/cms-patatrack/pixeltrack-standalone)). 
+The purpose of this package is to explore various implementations of the [CLUE](https://gitlab.cern.ch/kalos/clue) clustering algorithm, and their performance, within the same framework as [Patatrack](https://patatrack.web.cern.ch/patatrack/wiki/) pixel
+tracking application ([Pixeltrack](https://github.com/cms-patatrack/pixeltrack-standalone)). The full description of the CLUE procedure can be found [here](https://www.frontiersin.org/articles/10.3389/fdata.2020.591315/full).
+An implementation of the 3D version (as integrated in CMSSW, cpu-only) is also available for `serial` and `alpaka`.
+In this document, the 2D version of the algorithm will be simply referred as CLUE, while the 3D version as CLUE3D.
 
-The application is designed to require minimal dependencies on the system. All programs require
+The application is designed to require minimal dependencies on the system. All programs require:
 * GNU Make, `curl`, `md5sum`, `tar`
+* recent C++17 compatible compiler (GCC 8, 9, 10, 11).
 
-SYCL compiler and libraries get automatically sourced from cvmfs, so there is no need for a local install when running on a CERN machine.
-
-It is suggested to source a recent compiler from `cvmfs`, i.e.
+## Building
+Recent compilers are available on `cvmfs` (if accessing to `lxplus` and/or CERN machines, like `patatrack02`), i.e.
 ```
 source /cvmfs/sft.cern.ch/lcg/contrib/gcc/11.2.0/x86_64-centos7/setup.sh
 ```
-in order to work with other implementations (i.e. alpaka).
+Be aware of possible compatibility issues with `cuda` or `alpaka`.
 
-## Building
+The following backends are available:
+* alpaka
+* alpakatest
+* cuda
+* cudatest
+* serial
+* sycl
+* sycltest
+
+`alpakatest`, `cudatest` and `sycltest` just provide examples on how to write `Producers` and `ESProducers` and organize the code. In addition, they allow the test the various backends when changes to the framework are applied.
+
+To build the application, just run:
+```bash
+make -j `nproc` backendName
+```
+i.e. for the `serial` backend, compile with:
+```bash
+make -j `nproc` serial
+```
+After building the application, source the environment with:
+```bash
+source env.sh
+```
+before executing it. For `sycl` and `sycltest`, check the following instructions.
+
 ### `sycl` and `sycltest`
+SYCL compiler and libraries can get automatically sourced from `cvmfs`, so there is no need for a local install when running on a CERN machine.
 If running on a machine with Intel GPU(s), building the project only requires to run:
 ```bash
 make environment
 source env.sh
 make -j `nproc` sycl
 ```
- This will compile the project and produce an executable for Intel CPUs and specifically the GPU found on Olice-05.
+This will build the project and produce an executable for Intel CPUs and specifically the GPU available on `olice-05` machine.
 
-When using a CUDA machine, since OneAPI doesn't officially support the CUDA backend yet, compilation falls back on the open source llvm complier, which requires to source devtoolset 9 first, then build the project with a slightly different command:
+Running the application on NVIDIA GPU with `sycl` is also possible. Since OneAPI doesn't officially support the CUDA backend yet, compilation falls back on the open source llvm complier, which requires slightly different instructions:
 ```bash
 source scl_source enable devtoolset-9
 USE_SYCL_PATATRACK=1 make -j `nproc` sycl
 source env.sh
 ```
-This will produce an executable tailored for any CUDA GPU. Note that the environment is different so the build might clash if executed in the same folder in afs.
+This will produce an executable tailored for any NVIDIA GPU. Note that the environment is different, so the build might clash if executed in the same folder in `afs`. 
 
-## Runtime parameters
+## CLUE parameters
 CLUE needs three parameters to run: `dc`, `rhoc` and `outlierDeltaFactor`. 
 
-_dc_ is the critical distance used to compute the local density.
-_rhoc_ is the minimum local density for a point to be promoted as a Seed.
-_outlierDeltaFactor_ is  a multiplicative constant to be applied to `dc`.
+- _dc_ is the critical distance used to compute the local density;
+- _rhoc_ is the minimum local density for a point to be promoted as a seed;
+- _outlierDeltaFactor_ is  a multiplicative constant to be applied to `dc`, out of which a point is marked as an outlier (i.e. noise).
 
 A default set of these parameters, together with `produceOutput` (boolean which specifies whether to produce a csv output file or not) is found as a configuration file (.csv) in [`config`](config). Any other configuration can be passed to the program through a similar file which should follow the format:
 ```bash
@@ -65,9 +92,7 @@ Executing the program is as simple as running:
 ```bash
 ./sycl
 ```
-
-Other than the configuration file which we've already touched, many other options are available at runtime:
-
+Several options are available at runtime:
 ```
 ./sycl: [--device DEV] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile PATH] [--configFile PATH] [--transfer] [--validation] [--empty]
 
@@ -84,7 +109,9 @@ Options
  --empty             Ignore all producers (for testing only)
 ```
 
-## Details
+NOTE: some backends might have less options or more (i.e. `serial` and `cuda` do not have a `--device` option, but `alpaka` has a `--backend` option that can take several arguments and respective weights to split the job among them as desired). Please have a look at the `main` file of the application found in the `bin` folder for each backend.
+
+For `serial` and `alpaka` only, an additional option is required: `--dim 2` must be used to run the CLUE algorithm, while `--dim 3` must be selected for CLUE3D. `--dim` is not required for the other backends. 
 
 ### SYCL device selection
 The option to select the device is quite flexible. In the SYCL implementation, ```--device``` can accept either a class of devices (cpu, gpu or acc) or a specific device. If one class is selected and the program is executed with more than one stream, the load will be automatically divided among all the available devices at runtime. 
@@ -101,37 +128,35 @@ To select a particular device, specify its name as seen in the list obtained fro
 ```
 using the option ```--device ext_oneapi_level_zero:gpu:0``` will execute the program on Intel(R) Graphics [0x020a] using the Level-Zero backend.
 
-### Testing 
-To validate the algorithm, results get transferred back to host memory and compared against the correct file taken from a reference set. This option is available for toyDetectors from 1k to 10k with the default parameters. Any other file will not be validated. When using parameters different from the ones in the default configuration file, only input variables will be validated.
+## Testing 
+To validate the algorithm, results are transferred back to host memory and compared against the correct file taken from a reference set. This option is available for toyDetectors from 1k to 10k with the default parameters. Any other file will not be validated. When using parameters different from the ones in the default configuration file, only input variables are validated.
 
-### Code structure
+## Code structure
 
-The project is organized very similarly to [Pixeltrack-standalone](https://github.com/cms-patatrack/pixeltrack-standalone). As such, it is split into several programs, one (or more) for each
+The project is organized as in [Pixeltrack-standalone](https://github.com/cms-patatrack/pixeltrack-standalone). It is split into several programs, one (or more) for each
 test case. Each test case has its own directory under [`src`](src)
 directory. A test case contains the full application: framework, data
-formats, device tooling, plugins for the algorithmic modules ran
+formats, device tooling, plugins for the algorithmic modules run
 by the framework, and the executable.
 
 Each test program is structured as follows within `src/<program name>`
-(examples point to [`sycl`](src/sycl)
+(examples point to [`sycl`](src/sycl))
 * [`Makefile`](src/sycl/Makefile) that defines the actual build rules for the program
 * [`Makefile.deps`](src/sycl/Makefile.deps) that declares the external dependencies of the program, and the dependencies between shared objects within the program
-* [`bin/`](src/sycl/bin/) directory that contains all the framework code for the executable binary. These files should not need to be modified, except [`main.cc`](src/sycl/bin/main.cc) for changin the set of modules to run, and possibly more command line options
-* `plugin-<PluginName>/` directories contain the source code for plugins. The `<PluginName>` part specifies the name of the plugin, and the resulting shared object file is `plugin<PluginName>.so`. Note that no other library or plugin may depend on a plugin (either at link time or even thourgh the `#include` of a header). The plugins may only be loaded through the names of the modules by the [`PluginManager`](src/sycl/bin/PluginManager.h).
+* [`bin/`](src/sycl/bin/) directory that contains all the framework code for the executable binary. These files should not need to be modified, except [`main.cc`](src/sycl/bin/main.cc) in case of changing the set of modules to run, and possibly more command line options
+* `plugin-<PluginName>/` directories contain the source code for plugins. The `<PluginName>` part specifies the name of the plugin, and the resulting shared object file is `plugin<PluginName>.so`. Note that no other library or plugin may depend on a plugin (either at link time or even through the `#include` of a header). The plugins may only be loaded through the names of the modules by the [`PluginManager`](src/sycl/bin/PluginManager.h).
 * `<LibraryName>/`: the remaining directories are for libraries. The `<LibraryName>` specifies the name of the library, and the resulting shared object file is `lib<LibraryName>.so`. Other libraries or plugins may depend on a library, in which case the dependence must be declared in [`Makefile.deps`](src/sycl/Makefile.deps).
-  * [`CondFormats/`](src/sycl/CondFormats/):
-  * [`SYCLDataFormats/`](src/sycl/CUDADataFormats/): SYCL-specific data structures that can be passed from one module to another via the `edm::Event`. A given portability technology likely needs its own data format directory, the `SYCLDataFormats` can be used as an example.
-  * [`SYCLCore/`](src/sycl/CUDACore/): Various tools for SYCL. A given portability technology likely needs its own tool directory, the `SYCLCore` can be used as an example.
+  * [`SYCLDataFormats/`](src/sycl/CUDADataFormats/): SYCL-specific data structures that can be passed from one module to another via the `edm::Event`. A given portability technology needs its own data format directory, the `SYCLDataFormats` can be used as an example.
+  * [`SYCLCore/`](src/sycl/CUDACore/): Various tools for SYCL. A given portability technology needs its own tool directory, the `SYCLCore` can be used as an example.
   * [`DataFormats/`](src/sycl/DataFormats/): mainly CPU-side data structures that can be passed from one module to another via the `edm::Event`. Some of these are produced by the [`edm::Source`](src/sycl/bin/Source.h) by reading the binary dumps. These files should not need to be modified. New classes may be added, but they should be independent of the portability technology.
   * [`Framework/`](src/sycl/Framework/): crude approximation of the CMSSW framework. Utilizes TBB tasks to orchestrate the processing of the events by the modules. These files should not need to be modified.
-  * [`Geometry/`](src/sycl/Geometry/): geometry information, essentially handful of compile-time constants. May be modified.
 
 For more detailed description of the application structure (mostly plugins) see
 [CodeStructure.md](doc/CodeStructure.md)
 
-### Build system
+## Build system
 
-The build system is based on pure GNU Make. There are two levels of
+The build system is based purely on GNU Make. There are two levels of
 Makefiles. The [top-level Makefile](Makefile) handles the building of
 the entire project: it defines general build flags, paths to external
 dependencies in the system, recipes to download and build the

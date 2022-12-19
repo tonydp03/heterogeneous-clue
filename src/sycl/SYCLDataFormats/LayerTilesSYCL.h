@@ -7,7 +7,7 @@
 #include <cstdint>
 // SYCL include
 #include <CL/sycl.hpp>
-#include "SYCLDataFormats/SYCLVecArray.h"
+#include "SYCLCore/VecArray.h"
 #include "DataFormats/LayerTilesConstants.h"
 
 class LayerTilesSYCL {
@@ -43,6 +43,8 @@ public:
     for (auto &t : layerTiles_)
       t.reset();
   }
+
+  void clear(int i) { layerTiles_[i].reset(); }
 
   cms::sycltools::VecArray<int, LayerTilesConstants::maxTileDepth> &operator[](int globalBinId) {
     return layerTiles_[globalBinId];

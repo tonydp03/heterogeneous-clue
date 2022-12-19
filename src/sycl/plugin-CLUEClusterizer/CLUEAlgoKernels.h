@@ -7,6 +7,23 @@
 
 using view = PointsCloudSYCL::PointsCloudSYCLView;
 
+void kernel_reset_followers(cms::sycltools::VecArray<int, maxNFollowers> *d_followers,
+                            uint32_t const &numberOfPoints,
+                            sycl::nd_item<1> item) {
+  auto i = item.get_group(0) * item.get_local_range().get(0) + item.get_local_id(0);
+  if (i < numberOfPoints) {
+    d_followers[i].reset();
+  }
+}
+
+void kernel_reset_hist(LayerTilesSYCL *d_hist, sycl::nd_item<1> item) {
+  auto i = item.get_group(0) * item.get_local_range().get(0) + item.get_local_id(0);
+  if (i <  LayerTilesConstants::nRows * LayerTilesConstants::nColumns) {
+    for (int layerId = 0; layerId < NLAYERS; ++layerId)
+      d_hist[layerId].clear(i);
+  }
+}
+
 void kernel_compute_histogram(LayerTilesSYCL *d_hist, view *d_points, int const &numberOfPoints, sycl::nd_item<1> item) {
   int i = item.get_group(0) * item.get_local_range().get(0) + item.get_local_id(0);
   if (i < numberOfPoints) {

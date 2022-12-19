@@ -1,13 +1,13 @@
-#ifndef CLUE_CONFIG_H
-#define CLUE_CONFIG_H
+#ifndef CLUE_config_h
+#define CLUE_config_h
 
 #include <vector>
 #include <filesystem>
 #include <regex>
 
 struct Parameters {
-  float dc = 20;
-  float rhoc = 25;
+  float dc = 1.3;
+  float rhoc = 0.11;
   float outlierDeltaFactor = 2;
   bool produceOutput = false;
 };

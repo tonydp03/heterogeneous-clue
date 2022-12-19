@@ -19,31 +19,35 @@
 
 namespace {
   void print_help(std::string const& name) {
-    std::cout << name
-              << ": [--device DEV] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
-                 "PATH] [--configFile PATH] [--transfer] [--validation] "
-                 "[--empty]\n\n"
-              << "Options\n"
-              << " --device            Specifies the device which should run the code\n"
-              << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
-              << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
-              << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
-              << " --runForMinutes     Continue processing the set of 100 events until this many minutes have passed "
-                 "(default -1 for disabled; conflicts with --maxEvents)\n"
-              << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
-                 "'data/input/raw2D.bin')\n"
-              << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
-                 "produceOutput) to run CLUE (default 'config/hgcal_config.csv'\n"
-              << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
-              << " --validation        Run (rudimentary) validation at the end (implies --transfer)\n"
-              << " --empty             Ignore all producers (for testing only)\n"
-              << std::endl;
+    std::cout
+        << name
+        << ": [--device DEV] [--dim D] [--numberOfThreads NT] [--numberOfStreams NS] [--maxEvents ME] [--inputFile "
+           "PATH] [--configFile PATH] [--transfer] [--validation] "
+           "[--empty]\n\n"
+        << "Options\n"
+        << " --device            Specifies the device which should run the code\n"
+        << " --dim               Dimensionality of the algorithm (default 2 to run CLUE 2D, use 3 to run CLUE 3D)\n"
+        << " --numberOfThreads   Number of threads to use (default 1, use 0 to use all CPU cores)\n"
+        << " --numberOfStreams   Number of concurrent events (default 0 = numberOfThreads)\n"
+        << " --maxEvents         Number of events to process (default -1 for all events in the input file)\n"
+        << " --runForMinutes     Continue processing the set of 100 events until this many minutes have passed "
+           "(default -1 for disabled; conflicts with --maxEvents)\n"
+        << " --inputFile         Path to the input file to cluster with CLUE (default is set to "
+           "'data/input/raw2D.bin')\n"
+        << " --configFile        Path to the config file with the parameters (dc, rhoc, outlierDeltaFactor, "
+           "produceOutput) to run CLUE 2D (default 'config/hgcal_config.csv' in the directory of the executable); not "
+           "necessary for CLUE 3D\n"
+        << " --transfer          Transfer results from GPU to CPU (default is to leave them on GPU)\n"
+        << " --validation        Run (rudimentary) validation at the end (CLUE 2D only implies --transfer)\n"
+        << " --empty             Ignore all producers (for testing only)\n"
+        << std::endl;
   }
 }  // namespace
 
 int main(int argc, char** argv) try {
   // Parse command line arguments
   std::vector<std::string> args(argv, argv + argc);
+  int dim = 2;
   int numberOfThreads = 1;
   int numberOfStreams = 0;
   int maxEvents = -1;
@@ -60,7 +64,11 @@ int main(int argc, char** argv) try {
     } else if (*i == "--device") {
       ++i;
       std::string device = *i;
+      device += ",host";
       setenv("SYCL_DEVICE_FILTER", device.c_str(), true);
+    } else if (*i == "--dim") {
+      ++i;
+      dim = std::stoi(*i);
     } else if (*i == "--numberOfThreads") {
       ++i;
       numberOfThreads = std::stoi(*i);
@@ -96,6 +104,10 @@ int main(int argc, char** argv) try {
       return EXIT_FAILURE;
     }
   }
+  if (dim != 2 and dim != 3) {
+    std::cout << "The dimensionality of the algorithm is either 2 or 3!" << std::endl;
+    return EXIT_FAILURE;
+  }
   if (maxEvents >= 0 and runForMinutes >= 0) {
     std::cout << "Got both --maxEvents and --runForMinutes, please give only one of them" << std::endl;
     return EXIT_FAILURE;
@@ -107,16 +119,20 @@ int main(int argc, char** argv) try {
     numberOfStreams = numberOfThreads;
   }
   if (inputFile.empty()) {
-    inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
+    if (dim == 2) {
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw2D.bin";
+    } else if (dim == 3) {
+      inputFile = std::filesystem::path(args[0]).parent_path() / "data/input/raw3D.bin";
+    }
   }
   if (not std::filesystem::exists(inputFile)) {
     std::cout << "Input file '" << inputFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
-  if (configFile.empty()) {
+  if (configFile.empty() and (dim == 2)) {
     configFile = std::filesystem::path(args[0]).parent_path() / "config" / "hgcal_config.csv";
   }
-  if (not std::filesystem::exists(configFile)) {
+  if (not std::filesystem::exists(configFile) and (dim == 2)) {
     std::cout << "Config file '" << configFile << "' does not exist" << std::endl;
     return EXIT_FAILURE;
   }
@@ -124,46 +140,57 @@ int main(int argc, char** argv) try {
   // Initialise the SYCL runtime
   cms::sycltools::enumerateDevices(true);
 
-  Parameters par;
-  std::ifstream iFile(configFile);
-  std::string value = "";
-  while (getline(iFile, value, ',')) {
-    par.dc = std::stof(value);
-    getline(iFile, value, ',');
-    par.rhoc = std::stof(value);
-    getline(iFile, value, ',');
-    par.outlierDeltaFactor = std::stof(value);
-    getline(iFile, value);
-    par.produceOutput = static_cast<bool>(std::stoi(value));
-  }
-  iFile.close();
-
-  std::cerr << "Running CLUE 2D algorithm with the following parameters: \n";
-  std::cerr << "dc = " << par.dc << '\n';
-  std::cerr << "rhoc = " << par.rhoc << '\n';
-  std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
-
-  if (par.produceOutput) {
-    transfer = true;
-    std::cout << "Producing output at the end" << std::endl;
-  }
-
   // Initialise the EventProcessor
   std::vector<std::string> edmodules;
   std::vector<std::string> esmodules;
-  if (not empty) {
-    edmodules = {"CLUESYCLClusterizer"};
-    esmodules = {"CLUESYCLClusterizerESProducer"};
-    if (transfer) {
-      esmodules.emplace_back("CLUEOutputESProducer");
-      edmodules.emplace_back("CLUEOutputProducer");
+  if (dim == 2) {
+    Parameters par;
+    std::ifstream iFile(configFile);
+    std::string value = "";
+    while (getline(iFile, value, ',')) {
+      par.dc = std::stof(value);
+      getline(iFile, value, ',');
+      par.rhoc = std::stof(value);
+      getline(iFile, value, ',');
+      par.outlierDeltaFactor = std::stof(value);
+      getline(iFile, value);
+      par.produceOutput = static_cast<bool>(std::stoi(value));
     }
-    if (validation) {
-      esmodules.emplace_back("CLUEValidatorESProducer");
-      edmodules.emplace_back("CLUEValidator");
+    iFile.close();
+
+    std::cerr << "Running CLUE 2D algorithm with the following parameters: \n";
+    std::cerr << "dc = " << par.dc << '\n';
+    std::cerr << "rhoc = " << par.rhoc << '\n';
+    std::cerr << "outlierDeltaFactor = " << par.outlierDeltaFactor << std::endl;
+
+    if (par.produceOutput) {
+      transfer = true;
+      std::cout << "Producing output at the end" << std::endl;
+    }
+
+    if (not empty) {
+      edmodules = {"CLUESYCLClusterizer"};
+      esmodules = {"CLUESYCLClusterizerESProducer"};
+      if (transfer) {
+        esmodules.emplace_back("CLUEOutputESProducer");
+        edmodules.emplace_back("CLUEOutputProducer");
+      }
+      if (validation) {
+        esmodules.emplace_back("CLUEValidatorESProducer");
+        edmodules.emplace_back("CLUEValidator");
+      }
+    }
+  } else {
+    if (not empty) {
+      std::cerr << "Running CLUE 3D algorithm with default parameters\n";
+      edmodules = {"CLUESYCLTracksterizer"};
+      if (validation) {
+        std::cerr << "Validation not available for CLUE 3D" << std::endl;
+      }
     }
   }
-  edm::EventProcessor processor(maxEvents,
+  edm::EventProcessor processor(dim,
+                                maxEvents,
                                 runForMinutes,
                                 numberOfStreams,
                                 std::move(edmodules),
@@ -179,7 +206,7 @@ int main(int argc, char** argv) try {
               << " concurrent events and " << numberOfThreads << " threads." << std::endl;
   }
 
-  // Initialize he TBB thread pool
+  // Initialize the TBB thread pool
   tbb::global_control tbb_max_threads{tbb::global_control::max_allowed_parallelism,
                                       static_cast<std::size_t>(numberOfThreads)};
 

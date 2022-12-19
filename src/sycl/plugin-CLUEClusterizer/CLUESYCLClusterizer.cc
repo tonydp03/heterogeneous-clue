@@ -23,6 +23,7 @@ private:
 
   edm::EDGetTokenT<PointsCloud> pointsCloudToken_;
   edm::EDPutTokenT<cms::sycltools::Product<PointsCloudSYCL>> clusterToken_;
+  std::unique_ptr<CLUEAlgoSYCL> clueAlgo;
 };
 
 CLUESYCLClusterizer::CLUESYCLClusterizer(edm::ProductRegistry& reg)
@@ -34,10 +35,13 @@ void CLUESYCLClusterizer::produce(edm::Event& event, const edm::EventSetup& even
   cms::sycltools::ScopedContextProduce ctx(event.streamID());
   Parameters const& par = eventSetup.get<Parameters>();
   auto stream = ctx.stream();
-  CLUEAlgoSYCL clueAlgo(par.dc, par.rhoc, par.outlierDeltaFactor, stream, pc.n);
-  clueAlgo.makeClusters(pc);
+  PointsCloudSYCL d_points(stream, pc.x.size());
+  if (!clueAlgo) {
+    clueAlgo = std::make_unique<CLUEAlgoSYCL>(par.dc, par.rhoc, par.outlierDeltaFactor, stream);
+  }
+  clueAlgo->makeClusters(pc, d_points, stream);
 
-  ctx.emplace(event, clusterToken_, std::move(clueAlgo.d_points));
+  ctx.emplace(event, clusterToken_, std::move(d_points));
 }
 
 DEFINE_FWK_MODULE(CLUESYCLClusterizer);

@@ -1,9 +1,8 @@
 #ifndef POINTS_CLOUD_SYCL_H
 #define POINTS_CLOUD_SYCL_H
 
-#include <memory>
-
-#include "SYCLCore/unique_ptr.h"
+#include "SYCLCore/host_unique_ptr.h"
+#include "SYCLCore/device_unique_ptr.h"
 
 constexpr unsigned int reserve = 1000000;
 
@@ -11,17 +10,17 @@ class PointsCloudSYCL {
 public:
   PointsCloudSYCL() = default;
   PointsCloudSYCL(sycl::queue stream, int numberOfPoints)
-      : x{cms::sycltools::make_unique<float[]>(reserve, stream)},
-        y{cms::sycltools::make_unique<float[]>(reserve, stream)},
-        layer{cms::sycltools::make_unique<int[]>(reserve, stream)},
-        weight{cms::sycltools::make_unique<float[]>(reserve, stream)},
-        rho{cms::sycltools::make_unique<float[]>(reserve, stream)},
-        delta{cms::sycltools::make_unique<float[]>(reserve, stream)},
-        nearestHigher{cms::sycltools::make_unique<int[]>(reserve, stream)},
-        clusterIndex{cms::sycltools::make_unique<int[]>(reserve, stream)},
-        isSeed{cms::sycltools::make_unique<int[]>(reserve, stream)},
+      : x{cms::sycltools::make_device_unique<float[]>(reserve, stream)},
+        y{cms::sycltools::make_device_unique<float[]>(reserve, stream)},
+        layer{cms::sycltools::make_device_unique<int[]>(reserve, stream)},
+        weight{cms::sycltools::make_device_unique<float[]>(reserve, stream)},
+        rho{cms::sycltools::make_device_unique<float[]>(reserve, stream)},
+        delta{cms::sycltools::make_device_unique<float[]>(reserve, stream)},
+        nearestHigher{cms::sycltools::make_device_unique<int[]>(reserve, stream)},
+        clusterIndex{cms::sycltools::make_device_unique<int[]>(reserve, stream)},
+        isSeed{cms::sycltools::make_device_unique<int[]>(reserve, stream)},
         n{numberOfPoints} {
-    auto view = std::make_unique<PointsCloudSYCLView>();
+    auto view = cms::sycltools::make_host_unique<PointsCloudSYCLView>(stream);
     view->x = x.get();
     view->y = y.get();
     view->layer = layer.get();
@@ -33,7 +32,7 @@ public:
     view->isSeed = isSeed.get();
     view->n = numberOfPoints;
 
-    view_d = cms::sycltools::make_unique<PointsCloudSYCLView>(stream);
+    view_d = cms::sycltools::make_device_unique<PointsCloudSYCLView>(stream);
     stream.memcpy(view_d.get(), view.get(), sizeof(PointsCloudSYCLView)).wait();
   }
   PointsCloudSYCL(PointsCloudSYCL const &pc) = delete;
@@ -43,15 +42,15 @@ public:
 
   ~PointsCloudSYCL() = default;
 
-  cms::sycltools::unique_ptr<float[]> x;
-  cms::sycltools::unique_ptr<float[]> y;
-  cms::sycltools::unique_ptr<int[]> layer;
-  cms::sycltools::unique_ptr<float[]> weight;
-  cms::sycltools::unique_ptr<float[]> rho;
-  cms::sycltools::unique_ptr<float[]> delta;
-  cms::sycltools::unique_ptr<int[]> nearestHigher;
-  cms::sycltools::unique_ptr<int[]> clusterIndex;
-  cms::sycltools::unique_ptr<int[]> isSeed;
+  cms::sycltools::device::unique_ptr<float[]> x;
+  cms::sycltools::device::unique_ptr<float[]> y;
+  cms::sycltools::device::unique_ptr<int[]> layer;
+  cms::sycltools::device::unique_ptr<float[]> weight;
+  cms::sycltools::device::unique_ptr<float[]> rho;
+  cms::sycltools::device::unique_ptr<float[]> delta;
+  cms::sycltools::device::unique_ptr<int[]> nearestHigher;
+  cms::sycltools::device::unique_ptr<int[]> clusterIndex;
+  cms::sycltools::device::unique_ptr<int[]> isSeed;
   int n;
 
   class PointsCloudSYCLView {
@@ -71,6 +70,6 @@ public:
   PointsCloudSYCLView *view() const { return view_d.get(); }
 
 private:
-  cms::sycltools::unique_ptr<PointsCloudSYCLView> view_d;
+  cms::sycltools::device::unique_ptr<PointsCloudSYCLView> view_d;
 };
 #endif

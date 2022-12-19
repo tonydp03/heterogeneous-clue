@@ -96,6 +96,77 @@ export ROCM_LDFLAGS := -L$(ROCM_LIBDIR) -lamdhip64
 export ROCM_TEST_CXXFLAGS := -DGPU_DEBUG
 endif
 
+# SYCL 
+SYCL_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Wno-non-template-friend -Werror=format-contains-nul -Werror=return-local-addr -Werror=unused-but-set-variable
+
+ifdef USE_SYCL_PATATRACK
+SYCL_BASE     := /data2/user/wredjeb/sycl_workspace/build
+USER_SYCLFLAGS := -fsycl-targets=nvptx64-nvidia-cuda -std=c++17
+export SYCL_CXX      := $(SYCL_BASE)/bin/clang++
+export SYCL_CXXFLAGS := -fsycl $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
+
+else ifdef USE_SYCL_LLVM
+SYCL_BASE := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/build-2022-09
+
+USER_SYCLFLAGS := -std=c++17 
+# CPU + NVIDIA GPU
+SYCL_AOTFLAGS := -fsycl-targets=spir64_x86_64,nvptx64-nvidia-cuda -fno-bundle-offload-arch --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version -Wno-linker-warnings
+
+# CPU + AMD GPU
+#SYCL_AOTFLAGS := -fsycl-targets=spir64_x86_64,amdgcn-amd-amdhsa -Xsycl-target-backend=amdgcn-amd-amdhsa "--offload-arch=gfx900" --rocm-path=$(ROCM_BASE) -Wno-linker-warnings
+
+# -fno-bundle-offload-arch              Specify that the offload bundler should not identify a bundle with specific arch.
+#                                       For example, the bundle for `nvptx64-nvidia-cuda-sm_80` uses the bundle tag
+#                                       `nvptx64-nvidia-cuda` when used. This allows .o files to contain .bc bundles
+#                                       that are unspecific to a particular arch version.
+#
+# --offload-arch=sm_60                  CUDA offloading device architecture (e.g. sm_35), or HIP offloading target ID in
+# --offload-arch=sm_70                  the form of a device architecture followed by target ID features delimited by a
+# --offload-arch=sm_75                  colon. Each target ID feature is a pre-defined string followed by a plus or minus
+#                                       sign (e.g. gfx908:xnack+:sramecc-).
+#                                       May be specified more than once.
+
+export SYCL_CXX      := $(SYCL_BASE)/bin/clang++
+export SYCL_CXXFLAGS := -fsycl $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS) $(SYCL_AOTFLAGS)
+# makes OpenCL CPU visible
+export OCL_ICD_FILENAMES := /cvmfs/patatrack.cern.ch/externals/x86_64/rhel8/intel/sycl/runtime/intel/oclcpuexp_2022.14.8.0.04/x64/libintelocl.so
+
+else
+ONEAPI_BASE := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2022
+SYCL_VERSION  := 2022.2.0
+ifneq ($(wildcard $(ONEAPI_BASE)),)
+ONEAPI_ENV    := $(ONEAPI_BASE)/setvars.sh
+SYCL_BASE     := $(ONEAPI_BASE)/compiler/$(SYCL_VERSION)/linux
+TBB_BASE := $(ONEAPI_BASE)/tbb/latest
+TBB_LIBDIR := $(TBB_BASE)/lib/intel64/gcc4.8
+USER_SYCLFLAGS := -fp-model=precise -fimf-arch-consistency=true -no-fma -Wsycl-strict -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device xe_hp_sdv"
+export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
+export SYCL_CXXFLAGS := -fsycl -Wsycl-strict $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
+endif
+endif
+
+# to use a different toolchain
+#   - unset ONEAPI_ENV
+#   - set SYCL_BASE appropriately
+
+# check if libraries are under lib or lib64
+ifdef SYCL_BASE
+ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib
+else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
+SYCL_LIBDIR := $(SYCL_BASE)/lib64
+else
+SYCL_BASE :=
+endif
+endif
+# check oneTBB
+ifdef SYCL_BASE
+ifdef CUDA_BASE
+export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
+export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
+endif
+endif
+
 # Input data definitions
 DATA_BASE := $(BASE_DIR)/data
 export DATA_DEPS := $(DATA_BASE)/data_ok
@@ -109,8 +180,11 @@ export HWLOC_DEPS := $(HWLOC_BASE)
 HWLOC_CXXFLAGS := -isystem $(HWLOC_BASE)/include
 HWLOC_LDFLAGS := -L$(HWLOC_BASE)/lib -lhwloc
 
+ifndef TBB_BASE
 TBB_BASE := $(EXTERNAL_BASE)/tbb
 TBB_LIBDIR := $(TBB_BASE)/lib
+endif
+
 TBB_LIB := $(TBB_LIBDIR)/libtbb.so
 TBB_CMAKEFLAGS := -DCMAKE_INSTALL_PREFIX=$(TBB_BASE) \
                   -DCMAKE_INSTALL_LIBDIR=lib \
@@ -252,47 +326,6 @@ ifdef KOKKOS_HOST_PARALLEL
 endif
 export KOKKOS_DEPS := $(KOKKOS_LIB)
 
-SYCL_UNSUPPORTED_CXXFLAGS := --param vect-max-version-for-alias-checks=50 -Wno-non-template-friend -Werror=format-contains-nul -Werror=return-local-addr -Werror=unused-but-set-variable
-SYCL_VERSION  := 2022.1.0
-
-ifdef USE_SYCL_PATATRACK
-ONEAPI_BASE := /data2/user/wredjeb/sycl_workspace
-SYCL_BASE     := $(ONEAPI_BASE)/build
-USER_SYCLFLAGS := -fsycl-targets=nvptx64-nvidia-cuda -std=c++17
-export SYCL_CXX      := $(SYCL_BASE)/bin/clang++
-export SYCL_CXXFLAGS := -fsycl $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
-
-else
-ONEAPI_BASE := /cvmfs/projects.cern.ch/intelsw/oneAPI/linux/x86_64/2022
-ONEAPI_ENV    := $(ONEAPI_BASE)/setvars.sh
-SYCL_BASE     := $(ONEAPI_BASE)/compiler/$(SYCL_VERSION)/linux
-DPCT_BASE     := $(ONEAPI_BASE)/dpcpp-ct/$(SYCL_VERSION)
-DPCT_CXXFLAGS := -Wsycl-strict -isystem $(DPCT_BASE)/include
-USER_SYCLFLAGS := -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device xe_hp_sdv"
-export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
-export SYCL_CXXFLAGS := -fsycl $(DPCT_CXXFLAGS) $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
-endif
-
-# check if libraries are under lib or lib64
-ifdef SYCL_BASE
-ifneq ($(wildcard $(SYCL_BASE)/lib/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib
-else ifneq ($(wildcard $(SYCL_BASE)/lib64/libsycl.so),)
-SYCL_LIBDIR := $(SYCL_BASE)/lib64
-else
-SYCL_BASE :=
-endif
-endif
-# USER_SYCLFLAGS := -fsycl-targets=spir64_x86_64,spir64_gen -Xsycl-target-backend=spir64_gen "-device xe_hp_sdv"
-ifdef SYCL_BASE
-# export SYCL_CXX      := $(SYCL_BASE)/bin/dpcpp
-# export SYCL_CXXFLAGS := -fsycl $(DPCT_CXXFLAGS) $(filter-out $(SYCL_UNSUPPORTED_CXXFLAGS),$(CXXFLAGS)) $(USER_SYCLFLAGS)
-ifdef CUDA_BASE
-export SYCL_CUDA_PLUGIN := $(wildcard $(SYCL_LIBDIR)/libpi_cuda.so)
-export SYCL_CUDA_FLAGS  := --cuda-path=$(CUDA_BASE) -Wno-unknown-cuda-version
-endif
-endif
-
 # force the recreation of the environment file any time the Makefile is updated, before building any other target
 -include environment
 
@@ -413,6 +446,8 @@ endif
 # check if oneAPI environment file exists
 ifneq ($(wildcard $(ONEAPI_ENV)),)
 	@echo 'source $(ONEAPI_ENV)'                                            >> $@
+else
+	@echo 'export OCL_ICD_FILENAMES=$(OCL_ICD_FILENAMES)'                   >> $@
 endif
 
 define TARGET_template
@@ -514,6 +549,7 @@ $(EXTERNAL_BASE):
 # TBB
 external_tbb: $(TBB_LIB)
 
+ifndef ONEAPI_BASE
 # Let TBB Makefile to define its own CXXFLAGS
 $(TBB_LIB): $(HWLOC_BASE)
 $(TBB_LIB): CXXFLAGS:=
@@ -532,6 +568,7 @@ $(TBB_LIB):
 	$(eval undefine TBB_TMP)
 	$(eval undefine TBB_TMP_SRC)
 	$(eval undefine TBB_TMP_BUILD)
+endif
 
 # Boost
 .PHONY: external_boost

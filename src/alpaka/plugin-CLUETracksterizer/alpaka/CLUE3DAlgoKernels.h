@@ -54,7 +54,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                   pointsView *d_points,
                                   uint32_t const &numberOfPoints,
                                   int densitySiblingLayers = 3,
-                                  int densityXYDistanceSqr = 3.24,
+                                  float densityXYDistanceSqr = 3.24,
                                   float kernelDensityFactor = 0.2,
                                   bool densityOnSameLayer = false) const {
       int nEtaBin = ticl::TileConstants::nEtaBins;

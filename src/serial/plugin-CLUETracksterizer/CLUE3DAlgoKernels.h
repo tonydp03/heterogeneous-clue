@@ -27,7 +27,7 @@ void KernelCalculateDensitySoA(TICLLayerTiles &d_hist,
                                ClusterCollectionSerial &points,
                                int algoVerbosity = 0,
                                int densitySiblingLayers = 3,
-                               int densityXYDistanceSqr = 3.24,
+                               float densityXYDistanceSqr = 3.24,
                                float kernelDensityFactor = 0.2,
                                bool densityOnSameLayer = false) {
   constexpr int nEtaBin = TICLLayerTiles::constants_type_t::nEtaBins;
@@ -153,7 +153,7 @@ void KernelCalculateDensity(TICLLayerTiles &d_hist,
                             ClusterCollectionSerialOnLayers &points,
                             int algoVerbosity = 0,
                             int densitySiblingLayers = 3,
-                            int densityXYDistanceSqr = 3.24,
+                            float densityXYDistanceSqr = 3.24,
                             float kernelDensityFactor = 0.2,
                             bool densityOnSameLayer = false) {
   // To be verified is those numbers are available via types.
@@ -558,8 +558,9 @@ int KernelFindAndAssignClustersSoA(ClusterCollectionSerial &points,
       }
     }
   }
-
-  std::cout << "Number of Tracksters: " << nTracksters << std::endl;
+  if (algoVerbosity > 0) {
+    std::cout << "Number of Tracksters: " << nTracksters << std::endl;
+  }
   // Propagate cluster index
   while (!localStack.empty()) {
     auto [lyrIdx, soaIdx] = localStack.back();

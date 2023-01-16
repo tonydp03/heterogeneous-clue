@@ -70,9 +70,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               float xj = d_points->x[j];
               float yj = d_points->y[j];
               float dist_ij_squared = (xi - xj) * (xi - xj) + (yi - yj) * (yi - yj);
-              if (dist_ij_squared <= dcSquared) {
-                rhoi += (i == j ? 1.f : 0.5f) * d_points->weight[j];
-              }
+              rhoi += (int)(dist_ij_squared <= dcSquared) * (float((uint(i == j))*0.5f) +0.5f) * d_points->weight[j];
             }  // end of iterate inside this bin
           }
         }  // end of loop over bins in search box

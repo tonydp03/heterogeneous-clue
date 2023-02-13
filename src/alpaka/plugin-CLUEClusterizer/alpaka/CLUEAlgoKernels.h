@@ -8,13 +8,31 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using pointsView = PointsCloudAlpaka::PointsCloudAlpakaView;
 
-  struct KernelResetHist {
+  struct KernelSetHistoPtrs {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(const TAcc &acc, LayerTilesAlpaka *d_hist) const {
       cms::alpakatools::for_each_element_in_grid(
           acc, LayerTilesConstants::nRows * LayerTilesConstants::nColumns, [&](uint32_t i) {
             for (int layerId = 0; layerId < NLAYERS; ++layerId)
+            {
+              d_hist[layerId].init(i);
+              d_hist[layerId].setPtrs(i);
+            }
+          });
+    }
+  };
+
+
+  struct KernelResetHist {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc, LayerTilesAlpaka *d_hist,
+      pointsView *d_points, uint32_t const numberOfPoints) const {
+      cms::alpakatools::for_each_element_in_grid(
+          acc, LayerTilesConstants::nRows * LayerTilesConstants::nColumns, [&](uint32_t i) {
+            for (int layerId = 0; layerId < NLAYERS; ++layerId)
+            {
               d_hist[layerId].clear(i);
+            }
           });
     }
   };
@@ -91,8 +109,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       float dm_squared = dm * dm;
       cms::alpakatools::for_each_element_in_grid(acc, numberOfPoints, [&](uint32_t i) {
         int layeri = d_points->layer[i];
-        float deltai = std::numeric_limits<float>::max();
-        int nearestHigheri = -1;
+        // float deltai = std::numeric_limits<float>::max();
+        float deltai_branchless = std::numeric_limits<float>::max();
+        // int nearestHigheri = -1;
+        int nearestHigheri_branchless = -1;
         float xi = d_points->x[i];
         float yi = d_points->y[i];
         float rhoi = d_points->rho[i];
@@ -116,20 +136,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
               bool foundHigher = (d_points->rho[j] > rhoi);
               // in the rare case where rho is the same, use detid
               foundHigher = foundHigher || ((d_points->rho[j] == rhoi) && (j > i));
-              if (foundHigher && dist_ij_squared <= dm_squared) {
-                // definition of N'_{dm}(i)
-                // find the nearest point within N'_{dm}(i)
-                if (dist_ij_squared < deltai) {
-                  // update deltai and nearestHigheri
-                  deltai = dist_ij_squared;
-                  nearestHigheri = j;
-                }
-              }
+              uint change = uint(((foundHigher && dist_ij_squared <= dm_squared) and (dist_ij_squared < deltai_branchless)));
+              deltai_branchless = change * dist_ij_squared + !change * deltai_branchless;
+              nearestHigheri_branchless = change * j + !change * nearestHigheri_branchless;
+              // if (foundHigher && dist_ij_squared <= dm_squared) {
+              //   // definition of N'_{dm}(i)
+              //   // find the nearest point within N'_{dm}(i)
+              //   if (dist_ij_squared < deltai) {
+              //     // update deltai and nearestHigheri
+              //     deltai = dist_ij_squared;
+              //     nearestHigheri = j;
+              //   }
+              // }
+              // printf("\n%f %f\n", deltai, deltai_branchless);
+
+              // assert(deltai == deltai_branchless);
+              // if(nearestHigheri>=0)
+              //   assert(nearestHigheri == nearestHigheri_branchless);
             }  // end of iterate inside this bin
           }
         }  // end of loop over bins in search box
-        d_points->delta[i] = std::sqrt(deltai);
-        d_points->nearestHigher[i] = nearestHigheri;
+        d_points->delta[i] = std::sqrt(deltai_branchless);
+        d_points->nearestHigher[i] = nearestHigheri_branchless;
       });
     }
   };
@@ -159,7 +187,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           d_seeds[0].push_back(acc, i);  // head of d_seeds
         } else {
           if (!isOutlier) {
-            assert(d_points->nearestHigher[i] < static_cast<int>(numberOfPoints));
+            // assert(d_points->nearestHigher[i] < static_cast<int>(numberOfPoints));
             // register as follower of its nearest higher
             d_followers[d_points->nearestHigher[i]].push_back(acc, i);
           }

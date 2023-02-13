@@ -17,6 +17,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     hist_ = (*d_hist).data();
     seeds_ = (*d_seeds).data();
     followers_ = (*d_followers).data();
+    const Idx blockSize = 1024;
+    Idx gridSize = std::ceil(LayerTilesConstants::nRows * LayerTilesConstants::nColumns / static_cast<float>(blockSize));
+    auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
+    alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelSetHistoPtrs(), hist_));
+
   }
 
   void CLUEAlgoAlpaka::setup(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue queue_) {
@@ -39,18 +44,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
     alpaka::enqueue(queue_,
                     alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetFollowers(), followers_, host_pc.x.size()));
-    gridSize = std::ceil(LayerTilesConstants::nRows * LayerTilesConstants::nColumns / static_cast<float>(blockSize));
-    WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
-    alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetHist(), hist_));
+
   }
 
   void CLUEAlgoAlpaka::makeClusters(PointsCloud const &host_pc, PointsCloudAlpaka &d_points, Queue queue_) {
     setup(host_pc, d_points, queue_);
+    const Idx blockSize = 1024;
+    Idx gridSize = std::ceil(LayerTilesConstants::nRows * LayerTilesConstants::nColumns / static_cast<float>(blockSize));
+    auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
+    alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelResetHist(), hist_, d_points.view(), host_pc.x.size()));
     // calculate rho, delta and find seeds
     // 1 point per thread
-    const Idx blockSize = 1024;
-    const Idx gridSize = ceil(host_pc.x.size() / static_cast<float>(blockSize));
-    auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
+    gridSize = ceil(host_pc.x.size() / static_cast<float>(blockSize));
+    WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
     alpaka::enqueue(
         queue_,
         alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelComputeHistogram(), hist_, d_points.view(), host_pc.x.size()));
@@ -64,7 +70,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                     d_points.view(),
                                                     outlierDeltaFactor_,
                                                     dc_,
-                                                    host_pc.x.size()));
+                                                    host_pc.x.size())); 
     alpaka::enqueue(queue_,
                     alpaka::createTaskKernel<Acc1D>(WorkDiv1D,
                                                     KernelFindClusters(),

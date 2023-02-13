@@ -5,6 +5,8 @@
 #include "AlpakaCore/alpakaMemory.h"
 #include "AlpakaDataFormats/alpaka/ClusterCollectionAlpaka.h"
 #include "AlpakaDataFormats/TICLLayerTilesAlpaka.h"
+#include "AlpakaDataFormats/AlpakaVecArray.h"
+
 #include "DataFormats/Common.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {

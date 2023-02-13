@@ -8,9 +8,12 @@
 
 #include "AlpakaCore/alpakaConfig.h"
 #include "AlpakaVecArray.h"
+#include "AlpakaVecArrayRef.h"
+#include "AlpakaSoAVecArray.h"
+
 #include "DataFormats/LayerTilesConstants.h"
 
-using alpakaVect = cms::alpakatools::VecArray<int, LayerTilesConstants::maxTileDepth>;
+// using alpakaVect = cms::alpakatools::VecArrayRef<int, LayerTilesConstants::maxTileDepth>;
 
 #if !defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && !defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 struct int4 {
@@ -33,6 +36,17 @@ public:
   ALPAKA_FN_ACC inline constexpr void fill(TAcc& acc, float x, float y, int i) {
     layerTiles_[getGlobalBin(x, y)].push_back(acc, i);
   }
+
+  template <typename TAcc>
+  ALPAKA_FN_ACC inline constexpr void fill(TAcc& acc, int binId, int i) {
+    layerTiles_[binId].push_back(acc, i);
+  }
+
+  template <typename TAcc>
+  ALPAKA_FN_ACC inline constexpr void fill_unsafe(TAcc& acc, int binId, int i) {
+    layerTiles_[binId].push_back_unsafe(acc, i);
+  }
+
 
   ALPAKA_FN_HOST_ACC inline constexpr int getXBin(float x) const {
     int xBin = (x - LayerTilesConstants::minX) * LayerTilesConstants::rX;
@@ -62,12 +76,20 @@ public:
   }
 
   ALPAKA_FN_HOST_ACC inline constexpr void clear() {
-    for (auto& t : layerTiles_)
-      t.reset();
+    for(size_t i = 0; i< LayerTilesConstants::nColumns * LayerTilesConstants::nRows; ++i)
+      layerTiles_.clear(i);
   }
 
   ALPAKA_FN_HOST_ACC inline constexpr void clear(int i) {
-    layerTiles_[i].reset();
+    layerTiles_.clear(i);
+  }
+
+  ALPAKA_FN_HOST_ACC inline constexpr void setPtrs(int i) {
+    layerTiles_.setPtrs(i);
+  }
+  
+  ALPAKA_FN_HOST_ACC inline constexpr void init(int i) {
+    layerTiles_.init(i);
   }
 
   ALPAKA_FN_HOST_ACC inline constexpr auto size() {
@@ -76,10 +98,11 @@ public:
 
 
 
-  ALPAKA_FN_HOST_ACC inline constexpr alpakaVect& operator[](int globalBinId) { return layerTiles_[globalBinId]; }
+  ALPAKA_FN_HOST_ACC inline constexpr auto& operator[](int globalBinId) { return layerTiles_[globalBinId]; }
 
 private:
-  cms::alpakatools::VecArray<alpakaVect, LayerTilesConstants::nColumns * LayerTilesConstants::nRows> layerTiles_;
+
+  AlpakaSoAVecArray<int, LayerTilesConstants::nColumns * LayerTilesConstants::nRows, LayerTilesConstants::maxTileDepth> layerTiles_;
 };
 
 #endif

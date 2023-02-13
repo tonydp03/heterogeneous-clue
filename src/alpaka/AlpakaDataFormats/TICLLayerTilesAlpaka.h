@@ -7,7 +7,8 @@
 #include "DataFormats/Common.h"
 #include "DataFormats/Math/normalizedPhi.h"
 #include "AlpakaCore/alpakaConfig.h"
-#include "AlpakaVecArray.h"
+
+#include "AlpakaVecArrayRef.h"
 
 #if !defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && !defined(ALPAKA_ACC_GPU_HIP_ENABLED)
 struct int4 {
@@ -21,7 +22,7 @@ public:
   typedef T type;
 
   template <typename TAcc>
-  ALPAKA_FN_ACC void fill(TAcc& acc, double eta, double phi, unsigned int layerClusterId) {
+  ALPAKA_FN_ACC void fill(TAcc& acc, float eta, float phi, unsigned int layerClusterId) {
     tiles_[globalBin(eta, phi)].push_back(acc, layerClusterId);
   }
 
@@ -60,13 +61,16 @@ public:
 
   ALPAKA_FN_HOST_ACC int globalBin(int etaBin, int phiBin) const { return phiBin + etaBin * T::nPhiBins; }
 
-  ALPAKA_FN_HOST_ACC int globalBin(double eta, double phi) const { return phiBin(phi) + etaBin(eta) * T::nPhiBins; }
+  ALPAKA_FN_HOST_ACC int globalBin(float eta, float phi) const { return phiBin(phi) + etaBin(eta) * T::nPhiBins; }
 
-  // ALPAKA_FN_HOST_ACC void clear() {
-  //   auto nBins = T::nEtaBins * T::nPhiBins;
-  //   for (int j = 0; j < nBins; ++j)
-  //     tiles_[j].clear();
-  // }
+  ALPAKA_FN_HOST_ACC inline constexpr void setPtrs(int i) {
+    tiles_[i].setPtr(&sizes_[i]);
+  }
+  
+  ALPAKA_FN_HOST_ACC inline constexpr void init(int i) {
+    tiles_[i].init();
+  }
+ 
   ALPAKA_FN_HOST_ACC inline constexpr void clear() {
     for (auto& t : tiles_)
       t.reset();
@@ -74,12 +78,15 @@ public:
 
   ALPAKA_FN_HOST_ACC inline constexpr void clear(int i) { tiles_[i].reset(); }
 
-  ALPAKA_FN_HOST_ACC const cms::alpakatools::VecArray<unsigned int, T::tileDepth>& operator[](int globalBinId) const {
+  ALPAKA_FN_HOST_ACC const cms::alpakatools::VecArrayRef<unsigned int, T::tileDepth>& operator[](int globalBinId) const {
     return tiles_[globalBinId];
   }
 
 private:
-  cms::alpakatools::VecArray<cms::alpakatools::VecArray<unsigned int, T::tileDepth>, T::nBins> tiles_;
+  cms::alpakatools::VecArrayRef<cms::alpakatools::VecArrayRef<unsigned int, T::tileDepth>, T::nBins> tiles_;
+
+  std::array<int, T::nBins> sizes_;
+
 };
 
 using TICLLayerTilesAlpaka = TICLLayerTileT<ticl::TileConstants>;

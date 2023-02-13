@@ -5,6 +5,8 @@
 #include "CLUE3DAlgoAlpaka.h"
 #include "CLUE3DAlgoKernels.h"
 #include "DataFormats/Common.h"
+#include "AlpakaDataFormats/AlpakaVecArray.h"
+
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -18,6 +20,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     hist_ = (*d_hist).data();
     seeds_ = (*d_seeds).data();
     followers_ = (*d_followers).data();
+    const Idx blockSize = 1024;
+    Idx gridSize = std::ceil(ticl::TileConstants::nBins / static_cast<float>(blockSize));
+    auto WorkDiv1D = cms::alpakatools::make_workdiv<Acc1D>(gridSize, blockSize);
+    alpaka::enqueue(queue_, alpaka::createTaskKernel<Acc1D>(WorkDiv1D, KernelSetHistoPtrs(), hist_));
+
   }
 
   void CLUE3DAlgoAlpaka::setup(ClusterCollection const &host_pc, ClusterCollectionAlpaka &d_clusters, Queue queue_) {

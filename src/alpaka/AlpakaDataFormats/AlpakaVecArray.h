@@ -41,9 +41,9 @@ namespace cms::alpakatools {
         return T();  //undefined behaviour
     }
 
-    // thread-safe version of the vector, when used in a CUDA kernel
+    // thread-safe version of the vector, when used in a  kernel
     template <typename T_Acc>
-    ALPAKA_FN_ACC int push_back(const T_Acc &acc, const T &element) {
+    ALPAKA_FN_ACC inline constexpr int push_back(const T_Acc &acc, const T &element) {
       auto previousSize = atomicAdd(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
       if (previousSize < maxSize) {
         m_data[previousSize] = element;
@@ -51,6 +51,19 @@ namespace cms::alpakatools {
       } else {
         atomicSub(acc, &m_size, 1, alpaka::hierarchy::Blocks{});
         assert(("Too few elemets reserved"));
+        return -1;
+      }
+    }
+    // thread-unsafe version of the vector, when used in a  kernel
+    template <typename T_Acc>
+      ALPAKA_FN_ACC inline constexpr int push_back_unsafe(const T_Acc &acc, const T &element) {
+      auto previousSize = m_size;
+      m_size++;
+      if (previousSize < maxSize) {
+        m_data[previousSize] = element;
+        return previousSize;
+      } else {
+        --m_size;
         return -1;
       }
     }

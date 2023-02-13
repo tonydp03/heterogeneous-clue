@@ -7,12 +7,27 @@
 
 #include "AlpakaDataFormats/TICLLayerTilesAlpaka.h"
 #include "AlpakaDataFormats/alpaka/ClusterCollectionAlpaka.h"
+#include "AlpakaDataFormats/AlpakaVecArray.h"
 
 // #include <assert.h>
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   using pointsView = ClusterCollectionAlpaka::ClusterCollectionAlpakaView;
+
+  struct KernelSetHistoPtrs {
+    template <typename TAcc>
+    ALPAKA_FN_ACC void operator()(const TAcc &acc, TICLLayerTilesAlpaka *d_hist) const {
+      cms::alpakatools::for_each_element_in_grid(
+          acc, ticl::TileConstants::nBins, [&](uint32_t i) {
+            for (int layerId = 0; layerId < ticl::TileConstants::nLayers; ++layerId)
+            {
+              d_hist[layerId].init(i);
+              d_hist[layerId].setPtrs(i);
+            }
+          });
+    }
+  };
 
   struct KernelResetHist {
     template <typename TAcc>
@@ -90,16 +105,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           const int etaWindow = 2;
           const int phiWindow = 2;
           int etaBinMin = std::max(tileOnLayer.etaBin(d_points->eta[clusterIdx]) - etaWindow, 0);
-          int etaBinMax = std::min(tileOnLayer.etaBin(d_points->eta[clusterIdx]) + etaWindow, nEtaBin);
+          int etaBinMax = std::min(tileOnLayer.etaBin(d_points->eta[clusterIdx]) + etaWindow, nEtaBin-1);
           int phiBinMin = tileOnLayer.phiBin(d_points->phi[clusterIdx]) - phiWindow;
           int phiBinMax = tileOnLayer.phiBin(d_points->phi[clusterIdx]) + phiWindow;
 
           for (int ieta = etaBinMin; ieta <= etaBinMax; ++ieta) {
             auto offset = ieta * nPhiBin;
-
             for (int iphi_it = phiBinMin; iphi_it <= phiBinMax; ++iphi_it) {
               int iphi = ((iphi_it % nPhiBin + nPhiBin) % nPhiBin);
-
+              // printf("%d\n", tileOnLayer[offset + iphi].size());
               for (auto otherClusterIdx : tileOnLayer[offset + iphi]) {
                 bool reachable = false;
                 // Still differentiate between silicon and Scintillator.
